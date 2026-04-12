@@ -33,7 +33,7 @@ qqq-predict = "qqq_trading.cli.predict:main"
 qqq-pipeline = "qqq_trading.cli.pipeline:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

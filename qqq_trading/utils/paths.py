@@ -4,7 +4,7 @@ import os
 
 # Allow override via environment variable
 _root = os.environ.get("QQQ_PROJECT_ROOT")
-PROJECT_ROOT = Path(_root) if _root else Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(_root) if _root else Path(__file__).resolve().parents[2]
 
 DATA_DIR = PROJECT_ROOT / "data"
 OUTPUT_DIR = PROJECT_ROOT / "output"
