@@ -1,0 +1,3 @@
+[console_scripts]
+qqq-pipeline = qqq_trading.cli.pipeline:main
+qqq-predict = qqq_trading.cli.predict:main
