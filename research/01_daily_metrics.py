@@ -73,7 +73,7 @@ def print_summary(daily):
 
 
 def main():
-    parquet_path = PROJECT_ROOT / "QQQ_1min_adjusted.parquet"
+    parquet_path = DATA_DIR / "QQQ_1min_adjusted.parquet"
     print("Loading adjusted 1-min data...")
     df = load_1min_data(parquet_path)
     print(f"  Loaded {len(df):,} bars, {df.index.date[0]} to {df.index.date[-1]}")
