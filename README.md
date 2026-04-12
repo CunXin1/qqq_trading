@@ -19,7 +19,7 @@ qqq_trading/
 │   ├── fomc_dates.csv                # FOMC announcement dates (2000-2026)
 │   ├── QQQ_1min_adjusted.parquet     # Split/dividend adjusted, 4.1M bars
 │   └── QQQ_1min_unadjusted.parquet   # Raw prices
-├── src/qqq_trading/                  # Core library
+├── qqq_trading/                      # Core library
 │   ├── config.py                     # Config dataclass + YAML loader
 │   ├── data/
 │   │   ├── daily_metrics.py          # 1-min → daily OHLCV aggregation
