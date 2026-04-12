@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# pytest
+.pytest_cache/
+
+# Data files (too large for git)
+data/QQQ_1min_adjusted.parquet
+data/QQQ_1min_unadjusted.parquet
+
+# Output (generated, not source)
+output/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
