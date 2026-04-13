@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Signal - QQQ Trading{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Today's Signal</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Prediction -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <h2 class="text-gray-400 text-sm mb-2">0DTE Range > 2%</h2>
+        <div class="text-7xl font-bold mb-2
+            {% if signal == 'HIGH' %}text-red-400
+            {% elif signal == 'ELEVATED' %}text-amber-400
+            {% elif signal == 'MODERATE' %}text-blue-400
+            {% else %}text-gray-500{% endif %}">
+            {{ "%.0f"|format(prob * 100) }}%
+        </div>
+        <span class="signal-badge signal-{{ signal|lower }} text-lg">{{ signal }}</span>
+
+        {% if prob >= 0.7 %}
+        <div class="mt-6 bg-red-900/30 border border-red-800 rounded p-3 text-red-300 text-sm">
+            BUY STRADDLE AT OPEN
+        </div>
+        {% elif prob >= 0.5 %}
+        <div class="mt-6 bg-amber-900/30 border border-amber-800 rounded p-3 text-amber-300 text-sm">
+            Consider straddle at open
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Market Context -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <h2 class="text-gray-400 text-sm mb-4">Market Context ({{ data_date }})</h2>
+        <table class="w-full text-sm">
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Previous Close</td>
+                <td class="text-right">${{ "%.2f"|format(close) }}</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Previous Range</td>
+                <td class="text-right">{{ "%.2f"|format(range_pct) }}%</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Close-to-Close</td>
+                <td class="text-right">{{ "%+.2f"|format(c2c_pct) }}%</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Max Drawdown</td>
+                <td class="text-right text-red-400">{{ "%.2f"|format(max_dd) }}%</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Max Runup</td>
+                <td class="text-right text-green-400">+{{ "%.2f"|format(max_ru) }}%</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Realized Vol (20d)</td>
+                <td class="text-right">{{ "%.1f"|format(rv20) }}%</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">VRP</td>
+                <td class="text-right {{ 'text-red-400' if vrp_label == 'Complacent' else ('text-green-400' if vrp_label == 'Fearful' else '') }}">
+                    {{ "%+.3f"|format(vrp) }} ({{ vrp_label }})
+                </td>
+            </tr>
+            {% if pre_range is defined %}
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Pre-market Range</td>
+                <td class="text-right">{{ "%.2f"|format(pre_range) }}%</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Pre-market Return</td>
+                <td class="text-right">{{ "%+.2f"|format(pre_ret) }}%</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="py-2 text-gray-500">Events</td>
+                <td class="text-right">
+                    {% if events %}
+                        {% for e in events %}
+                        <span class="bg-amber-900 text-amber-200 text-xs px-2 py-0.5 rounded">{{ e }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-gray-600">None</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -28,6 +28,12 @@ data/QQQ_1min_unadjusted.parquet
 # Output (generated, not source)
 output/
 
+# Config secrets
+config/bark.txt
+
+# Logs
+logs/
+
 # OS
 Thumbs.db
 Desktop.ini
