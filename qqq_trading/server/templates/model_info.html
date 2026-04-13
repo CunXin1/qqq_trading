@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Model Info - QQQ Trading{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Model Info</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Model Card -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <h2 class="text-gray-400 text-sm mb-4">Model</h2>
+        <table class="w-full text-sm">
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Type</td>
+                <td class="text-right">{{ model_type }}</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">File</td>
+                <td class="text-right text-gray-400">{{ model_file }}</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Features</td>
+                <td class="text-right">{{ features_total }}</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Target</td>
+                <td class="text-right">{{ target }}</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Test Period</td>
+                <td class="text-right">{{ test_period }}</td>
+            </tr>
+            <tr class="border-b border-gray-800/50">
+                <td class="py-2 text-gray-500">Test Days</td>
+                <td class="text-right">{{ test_days }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Metrics -->
+    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <h2 class="text-gray-400 text-sm mb-4">Evaluation Metrics</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-xs text-gray-500">AUC-ROC</div>
+                <div class="text-3xl font-bold text-blue-400">{{ auc }}</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-xs text-gray-500">Avg Precision</div>
+                <div class="text-3xl font-bold text-green-400">{{ ap }}</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-xs text-gray-500">Brier Score</div>
+                <div class="text-3xl font-bold text-amber-400">{{ brier }}</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-xs text-gray-500">Base Rate</div>
+                <div class="text-3xl font-bold text-gray-400">{{ base_rate }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backtest Table -->
+<div class="mt-6 bg-gray-900 rounded-xl p-6 border border-gray-800">
+    <h2 class="text-gray-400 text-sm mb-4">Backtest by Confidence Threshold</h2>
+    <table class="w-full text-sm">
+        <thead class="text-gray-500 border-b border-gray-800">
+            <tr>
+                <th class="text-left py-2">Threshold</th>
+                <th class="text-right">Alerts</th>
+                <th class="text-right">Hits</th>
+                <th class="text-right">Hit Rate</th>
+                <th class="text-right">Coverage</th>
+                <th class="text-right">Lift</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in backtest %}
+            <tr class="border-b border-gray-800/30">
+                <td class="py-2">{{ "%.0f"|format(b.threshold * 100) }}%</td>
+                <td class="text-right">{{ b.alerts }}</td>
+                <td class="text-right">{{ b.hits }}</td>
+                <td class="text-right">{{ "%.0f"|format(b.hit_rate * 100) }}%</td>
+                <td class="text-right">{{ "%.0f"|format(b.coverage * 100) }}%</td>
+                <td class="text-right">{{ "%.1f"|format(b.lift) }}x</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

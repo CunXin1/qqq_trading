@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Data Status - QQQ Trading{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Data Status</h1>
+    <form method="POST" action="/actions/fetch">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded">
+            Fetch Latest
+        </button>
+    </form>
+</div>
+
+<div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="text-gray-500 bg-gray-900 border-b border-gray-800">
+            <tr>
+                <th class="text-left px-4 py-3">Dataset</th>
+                <th class="text-left px-4">File</th>
+                <th class="text-right px-4">Size</th>
+                <th class="text-right px-4">Rows</th>
+                <th class="text-right px-4">Last Date</th>
+                <th class="text-right px-4">Modified</th>
+                <th class="text-center px-4">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in files %}
+            <tr class="border-b border-gray-800/30">
+                <td class="px-4 py-2 font-medium">{{ f.name }}</td>
+                <td class="px-4 text-gray-500">{{ f.path }}</td>
+                <td class="text-right px-4">{{ f.size_kb }} KB</td>
+                <td class="text-right px-4">{{ f.rows }}</td>
+                <td class="text-right px-4">{{ f.last_date }}</td>
+                <td class="text-right px-4 text-gray-500">{{ f.modified }}</td>
+                <td class="text-center px-4">
+                    {% if f.status == 'fresh' %}
+                    <span class="inline-block w-2 h-2 rounded-full bg-green-400"></span>
+                    {% elif f.status == 'ok' %}
+                    <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+                    {% elif f.status == 'stale' %}
+                    <span class="inline-block w-2 h-2 rounded-full bg-red-400"></span>
+                    {% else %}
+                    <span class="inline-block w-2 h-2 rounded-full bg-gray-600"></span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

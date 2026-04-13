@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}QQQ Trading{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+    <nav class="bg-gray-900 border-b border-gray-800">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+            <span class="text-lg font-bold text-white">QQQ Trading</span>
+            <a href="/" class="text-gray-400 hover:text-white text-sm">Dashboard</a>
+            <a href="/signal" class="text-gray-400 hover:text-white text-sm">Signal</a>
+            <a href="/history" class="text-gray-400 hover:text-white text-sm">History</a>
+            <a href="/data" class="text-gray-400 hover:text-white text-sm">Data</a>
+            <a href="/model" class="text-gray-400 hover:text-white text-sm">Model</a>
+        </div>
+    </nav>
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="text-center text-gray-600 text-xs py-4 border-t border-gray-800 mt-8">
+        QQQ 0DTE Volatility Prediction System
+    </footer>
+</body>
+</html>
