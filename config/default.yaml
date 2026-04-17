@@ -1,38 +1,77 @@
+# ============================================================
+# QQQ Trading System Configuration / QQQ 交易系统配置
+# ============================================================
+
+# --- 数据路径 / Data Paths ---
 data:
+  # 经拆股/分红调整的 QQQ 1分钟K线 (410万根, 2000-2026)
+  # Split/dividend-adjusted QQQ 1-min OHLCV bars (4.1M rows, 2000-2026)
   raw_data: "data/QQQ_1min_adjusted.parquet"
+
+  # 外部市场数据缓存 (VIX/VVIX/国债收益率), 避免重复下载
+  # Cache for external market data (VIX/VVIX/Treasury yields) from yfinance
   external_cache: "output/external_data.parquet"
 
+# --- 时间序列划分 / Time-Series Splits ---
 splits:
+  # 训练集: 2000-2019 (~5000交易日, 含2008金融危机、2018波动率末日等完整周期)
+  # Training set: 2000-2019 (~5000 days, covers 2008 crisis, 2018 Volmageddon, etc.)
   train_end: "2019-12-31"
+
+  # 验证集: 2020-2022 (含COVID崩盘、2021 meme股、2022加息周期)
+  # Validation set: 2020-2022 (COVID crash, 2021 meme stocks, 2022 rate hikes)
   val_start: "2020-01-01"
   val_end: "2022-12-31"
+
+  # 测试集: 2023至今, 完全不参与训练和调参 (~786交易日)
+  # Test set: 2023 onward, fully held out from training/tuning (~786 days)
   test_start: "2023-01-01"
 
+# --- 模型超参数 / Model Hyperparameters ---
 model:
+  # 基础配置: 用于研究/快速迭代
+  # Base preset: for research / quick iteration
   base:
-    n_estimators: 300
-    max_depth: 5
-    learning_rate: 0.05
-    subsample: 0.8
-    colsample_bytree: 0.8
-    reg_alpha: 0.0
-    reg_lambda: 1.0
+    n_estimators: 300       # 树数量 / Number of boosting trees
+    max_depth: 5            # 最大深度, 限制特征交互阶数 / Max depth, limits interaction order
+    learning_rate: 0.05     # 学习率, 每棵树的贡献权重 / Shrinkage per tree
+    subsample: 0.8          # 行采样80%, 引入随机性防过拟合 / Row subsampling (bagging-like)
+    colsample_bytree: 0.8   # 列采样80%, 防止依赖少数强特征 / Column subsampling per tree
+    reg_alpha: 0.0          # L1正则化(Lasso), 0=不稀疏化 / L1 reg, 0=no sparsification
+    reg_lambda: 1.0         # L2正则化(Ridge), 平滑叶子权重 / L2 reg, smooths leaf weights
 
+  # 生产配置: 用于正式训练/实盘部署
+  # Production preset: for formal training / live deployment
+  # vs base: 更多树+更低学习率=更稳定, 更激进列采样+L1=更鲁棒
+  # vs base: more trees + lower LR = more stable, aggressive col sampling + L1 = more robust
   production:
-    n_estimators: 500
-    max_depth: 5
-    learning_rate: 0.03
-    subsample: 0.8
-    colsample_bytree: 0.7
-    reg_alpha: 0.1
-    reg_lambda: 1.0
+    n_estimators: 500       # 比base多67%, 配合更小学习率更精细拟合 / 67% more trees for finer fitting
+    max_depth: 5            # 同base, 生产环境不增加深度 / Same as base, no depth increase in prod
+    learning_rate: 0.03     # 更小步长, 更平滑泛化 / Smaller steps, smoother generalization
+    subsample: 0.8          # 同base / Same as base
+    colsample_bytree: 0.7   # 更激进(70%), 增加多样性 / More aggressive (70%), more diversity
+    reg_alpha: 0.1          # 轻微L1, 自动忽略噪声特征 / Light L1, auto-prune noisy features
+    reg_lambda: 1.0         # 同base / Same as base
 
+# --- 阈值设置 / Threshold Settings ---
 thresholds:
+  # 大幅波动定义: 1%/2%/3%/5%, 用于生成二分类标签和多灵敏度回测
+  # Large move definitions: used for binary target labels and multi-sensitivity backtesting
   move_pcts: [0.01, 0.02, 0.03, 0.05]
+
+  # 置信度阈值列表: 回测不同概率门槛下的命中率/覆盖率/提升倍数
+  # Confidence thresholds: backtest precision/recall/lift at each probability cutoff
   confidence: [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
-random_state: 42
+# 全局随机种子, 确保完全可复现 / Global random seed for full reproducibility
+random_state: 87
 
+# --- 预测配置 / Prediction Settings ---
 prediction:
+  # 默认模型: "interaction"=完整122特征模型(含VRP×催化剂交叉), "base"=53基础特征
+  # Default model: "interaction"=full 122-feature model, "base"=53 base features only
   default_model: "interaction"
+
+  # 信号触发阈值: 概率>=此值归类为ELEVATED/HIGH, 可通过CLI --threshold覆盖
+  # Signal trigger: probability >= this value → ELEVATED/HIGH signal, overridable via CLI
   confidence_threshold: 0.5
