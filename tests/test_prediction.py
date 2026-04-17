@@ -1,8 +1,8 @@
 """Tests for prediction module."""
-from qqq_trading.models.prediction import (
+from models.prediction import (
     _classify_signal, build_features_for_prediction,
 )
-from qqq_trading.features.registry import get_full_features
+from features.registry import get_full_features
 
 
 def test_classify_signal():

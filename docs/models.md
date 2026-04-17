@@ -49,7 +49,7 @@ Two presets defined in `config/default.yaml`. See that file for detailed Chinese
 ### Via Python API / 通过Python接口
 
 ```python
-from qqq_trading import train_model, load_config
+from models import train_model, load_config
 
 config = load_config()
 model = train_model(X_train, y_train, "xgboost", config.model.production)
@@ -59,13 +59,13 @@ model = train_model(X_train, y_train, "xgboost", config.model.production)
 
 ```bash
 # Production training with default cutoff
-python -m qqq_trading.cli.pipeline --preset production --train-end 2022-12-31
+python -m cli.pipeline --preset production --train-end 2022-12-31
 
 # Research mode with LightGBM
-python -m qqq_trading.cli.pipeline --preset base --model-type lightgbm
+python -m cli.pipeline --preset base --model-type lightgbm
 
 # Force refresh external data before training
-python -m qqq_trading.cli.pipeline --preset production --refresh-external
+python -m cli.pipeline --preset production --refresh-external
 ```
 
 ### Pipeline Steps / 训练管道步骤
@@ -113,7 +113,7 @@ Each model is saved alongside a CSV file listing its exact feature columns (e.g.
 ## Evaluation / 评估
 
 ```python
-from qqq_trading import evaluate_model, backtest_thresholds
+from models import evaluate_model, backtest_thresholds
 
 metrics = evaluate_model(y_test, y_proba)
 # -> {'auc': 0.826, 'ap': 0.52, 'brier': 0.08, 'base_rate': 0.161, ...}

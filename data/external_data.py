@@ -16,7 +16,7 @@ def download_external_data(
         force: If True, re-download even if cache exists.
     """
     if cache_path is None:
-        from qqq_trading.utils.paths import OUTPUT_DIR
+        from utils.paths import OUTPUT_DIR
         cache_path = OUTPUT_DIR / "external_data.parquet"
 
     if cache_path.exists() and not force:

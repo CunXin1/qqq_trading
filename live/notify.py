@@ -11,9 +11,9 @@ Flow:
   4. Push result to iPhone via Bark
 
 Usage:
-    python -m qqq_trading.live.notify                     # run once
-    python -m qqq_trading.live.notify --bark-key YOUR_KEY # override key
-    python -m qqq_trading.live.notify --dry-run            # preview without pushing
+    python -m live.notify                     # run once
+    python -m live.notify --bark-key YOUR_KEY # override key
+    python -m live.notify --dry-run            # preview without pushing
 
 Config:
     Set BARK_KEY in config/bark.txt (one line, just the key)
@@ -21,7 +21,7 @@ Config:
     Or set BARK_KEY environment variable
 
 Cron (Mac Mini, Pacific Time — 6:29 AM PT = 9:29 AM ET):
-    29 6 * * 1-5 cd /path/to/qqq_trading && python -m qqq_trading.live.notify >> logs/notify.log 2>&1
+    29 6 * * 1-5 cd /path/to/qqq_trading && python -m live.notify >> logs/notify.log 2>&1
 """
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ def get_bark_key(args_key=None):
     if env_key:
         return env_key
 
-    config_path = Path(__file__).resolve().parents[2] / "config" / "bark.txt"
+    config_path = Path(__file__).resolve().parents[1] / "config" / "bark.txt"
     if config_path.exists():
         return config_path.read_text().strip()
 
@@ -55,10 +55,10 @@ def get_bark_key(args_key=None):
 
 def update_data():
     """Fetch latest data and merge into historical parquets."""
-    from qqq_trading.live.fetch_data import IBKRSource, YFinanceSource, fetch_from_source
-    from qqq_trading.live.fetch_data import fetch_yields, get_events
-    from qqq_trading.live.fetch_data import add_qqq_derived, add_vix_derived
-    from qqq_trading.live.fetch_data import merge_with_historical
+    from live.fetch_data import IBKRSource, YFinanceSource, fetch_from_source
+    from live.fetch_data import fetch_yields, get_events
+    from live.fetch_data import add_qqq_derived, add_vix_derived
+    from live.fetch_data import merge_with_historical
 
     days = 5  # enough for rolling features to bridge
 
@@ -110,11 +110,11 @@ def run_prediction():
 
     Uses yesterday's close data + today's pre-market data (available at 9:29 AM ET).
     """
-    from qqq_trading.utils.paths import OUTPUT_DIR, MODEL_DIR
-    from qqq_trading.models.training import load_model
-    from qqq_trading.features.base import engineer_base_features
-    from qqq_trading.features.external import engineer_all_external
-    from qqq_trading.features.interactions import build_interaction_features
+    from utils.paths import OUTPUT_DIR, MODEL_DIR
+    from models.training import load_model
+    from features.base import engineer_base_features
+    from features.external import engineer_all_external
+    from features.interactions import build_interaction_features
 
     daily = pd.read_parquet(OUTPUT_DIR / "daily_metrics.parquet")
     daily.index = pd.to_datetime(daily.index)

@@ -1,6 +1,6 @@
 """Tests for event calendar module."""
 import pandas as pd
-from qqq_trading.data.event_calendar import (
+from data.event_calendar import (
     load_fomc_dates, compute_nfp_dates, _compute_eve_dates,
     compute_days_to_event, compute_earnings_season,
 )

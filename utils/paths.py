@@ -4,9 +4,9 @@ import os
 
 # Allow override via environment variable
 _root = os.environ.get("QQQ_PROJECT_ROOT")
-PROJECT_ROOT = Path(_root) if _root else Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(_root) if _root else Path(__file__).resolve().parents[1]
 
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = PROJECT_ROOT / "datasets"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 CHART_DIR = OUTPUT_DIR / "charts"
 MODEL_DIR = OUTPUT_DIR / "model"

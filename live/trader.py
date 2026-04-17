@@ -8,9 +8,9 @@ Strategy:
   - Keep remaining 1 call + 1 put for manual exit
 
 Usage:
-    python -m qqq_trading.live.trader --paper              # paper trading (SAFE)
-    python -m qqq_trading.live.trader --paper --dry-run     # simulate only, no orders
-    python -m qqq_trading.live.trader --live                # REAL MONEY (careful!)
+    python -m live.trader --paper              # paper trading (SAFE)
+    python -m live.trader --paper --dry-run     # simulate only, no orders
+    python -m live.trader --live                # REAL MONEY (careful!)
 
 WARNING: This trades real money when --live is used. Always test with --paper first.
 """

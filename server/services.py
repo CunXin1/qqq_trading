@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from qqq_trading.utils.paths import OUTPUT_DIR, MODEL_DIR
+from utils.paths import OUTPUT_DIR, MODEL_DIR
 
 # ── Cache ──
 _cache = {
@@ -39,7 +39,7 @@ def _load_model():
     """Load model (cached)."""
     _check_cache()
     if _cache["model"] is None:
-        from qqq_trading.models.training import load_model
+        from models.training import load_model
         model, feat_cols = load_model(MODEL_DIR / "interaction_model.joblib")
         _cache["model"] = model
         _cache["feature_cols"] = feat_cols
@@ -50,9 +50,9 @@ def _build_features():
     """Build full feature DataFrame (cached)."""
     _check_cache()
     if _cache["features_df"] is None:
-        from qqq_trading.features.base import engineer_base_features
-        from qqq_trading.features.external import engineer_all_external
-        from qqq_trading.features.interactions import build_interaction_features
+        from features.base import engineer_base_features
+        from features.external import engineer_all_external
+        from features.interactions import build_interaction_features
 
         daily = pd.read_parquet(OUTPUT_DIR / "daily_metrics.parquet")
         daily.index = pd.to_datetime(daily.index)
@@ -301,7 +301,7 @@ def get_model_info():
 
     # Cached evaluation
     if _cache["eval_metrics"] is None:
-        from qqq_trading.models.evaluation import evaluate_model, backtest_thresholds
+        from models.evaluation import evaluate_model, backtest_thresholds
 
         df = _build_features()
         available = [f for f in feature_cols if f in df.columns]
@@ -335,7 +335,7 @@ def trigger_fetch():
     _task_status = {"status": "running", "message": "Fetching data...",
                     "updated": datetime.now().strftime("%H:%M:%S")}
     try:
-        from qqq_trading.live.notify import update_data
+        from live.notify import update_data
         source = update_data()
         _task_status = {"status": "done", "message": f"Data updated ({source})",
                         "updated": datetime.now().strftime("%H:%M:%S")}

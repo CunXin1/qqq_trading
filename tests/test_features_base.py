@@ -1,7 +1,7 @@
 """Tests for base feature engineering."""
 import numpy as np
-from qqq_trading.features.base import engineer_base_features
-from qqq_trading.features.registry import get_base_features
+from features.base import engineer_base_features
+from features.registry import get_base_features
 
 
 def test_base_features_created(sample_daily_metrics):

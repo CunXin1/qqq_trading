@@ -1,11 +1,11 @@
 """Tests for interaction feature engineering."""
-from qqq_trading.features.interactions import build_interaction_features
-from qqq_trading.features.registry import get_interaction_features
+from features.interactions import build_interaction_features
+from features.registry import get_interaction_features
 
 
 def test_interaction_features_created(sample_daily_metrics, sample_external_data):
-    from qqq_trading.features.base import engineer_base_features
-    from qqq_trading.features.external import engineer_all_external
+    from features.base import engineer_base_features
+    from features.external import engineer_all_external
 
     df = engineer_base_features(sample_daily_metrics)
     df = engineer_all_external(df, sample_external_data)
@@ -17,8 +17,8 @@ def test_interaction_features_created(sample_daily_metrics, sample_external_data
 
 
 def test_binary_flags_are_01(sample_daily_metrics, sample_external_data):
-    from qqq_trading.features.base import engineer_base_features
-    from qqq_trading.features.external import engineer_all_external
+    from features.base import engineer_base_features
+    from features.external import engineer_all_external
 
     df = engineer_base_features(sample_daily_metrics)
     df = engineer_all_external(df, sample_external_data)
@@ -32,8 +32,8 @@ def test_binary_flags_are_01(sample_daily_metrics, sample_external_data):
 
 
 def test_cross_features_are_product(sample_daily_metrics, sample_external_data):
-    from qqq_trading.features.base import engineer_base_features
-    from qqq_trading.features.external import engineer_all_external
+    from features.base import engineer_base_features
+    from features.external import engineer_all_external
 
     df = engineer_base_features(sample_daily_metrics)
     df = engineer_all_external(df, sample_external_data)

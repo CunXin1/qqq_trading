@@ -4,6 +4,10 @@ Uses the interaction model (XGBoost) with walk-forward on test period 2023-2026.
 
 Refactored to import from qqq_trading package instead of duplicating code.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import pandas as pd
 import numpy as np
 import warnings
@@ -14,11 +18,11 @@ from sklearn.metrics import (
     confusion_matrix, ConfusionMatrixDisplay,
 )
 
-from qqq_trading.utils.paths import OUTPUT_DIR, CHART_DIR
-from qqq_trading.utils.plotting import setup_matplotlib
-from qqq_trading.features.registry import get_full_features
-from qqq_trading.models.training import create_model, compute_pos_weight
-from qqq_trading.config import ModelConfig
+from utils.paths import OUTPUT_DIR, CHART_DIR
+from utils.plotting import setup_matplotlib
+from features.registry import get_full_features
+from models.training import create_model, compute_pos_weight
+from config import ModelConfig
 
 setup_matplotlib()
 import matplotlib.pyplot as plt
@@ -197,7 +201,7 @@ def plot_all_thresholds(all_results):
     ax.legend()
 
     # -- Plot 4-7: Confusion matrices at optimal threshold for each target --
-    from qqq_trading.models.evaluation import find_optimal_threshold
+    from models.evaluation import find_optimal_threshold
 
     for idx, t in enumerate(thresholds):
         if idx >= 2:

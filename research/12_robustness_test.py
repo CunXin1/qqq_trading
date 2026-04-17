@@ -6,6 +6,10 @@ Phase 12 (research): Robustness validation.
 
 Refactored to import from qqq_trading package instead of duplicating code.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import pandas as pd
 import numpy as np
 import warnings
@@ -13,11 +17,11 @@ warnings.filterwarnings("ignore")
 
 from sklearn.metrics import roc_auc_score, average_precision_score
 
-from qqq_trading.utils.paths import OUTPUT_DIR, CHART_DIR
-from qqq_trading.utils.plotting import setup_matplotlib
-from qqq_trading.features.registry import get_full_features
-from qqq_trading.models.training import train_model
-from qqq_trading.utils.splits import walk_forward_splits
+from utils.paths import OUTPUT_DIR, CHART_DIR
+from utils.plotting import setup_matplotlib
+from features.registry import get_full_features
+from models.training import train_model
+from utils.splits import walk_forward_splits
 
 setup_matplotlib()
 import matplotlib.pyplot as plt

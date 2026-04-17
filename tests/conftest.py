@@ -86,5 +86,5 @@ def sample_external_data():
 @pytest.fixture
 def config():
     """Default test config."""
-    from qqq_trading.config import Config
+    from config import Config
     return Config()

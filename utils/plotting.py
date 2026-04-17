@@ -26,7 +26,7 @@ def setup_matplotlib(figsize: tuple[int, int] | None = None) -> None:
 def save_chart(fig, name: str, chart_dir=None) -> None:
     """Save figure to chart directory."""
     if chart_dir is None:
-        from qqq_trading.utils.paths import CHART_DIR
+        from utils.paths import CHART_DIR
         chart_dir = CHART_DIR
     fig.tight_layout()
     fig.savefig(chart_dir / name, bbox_inches="tight")

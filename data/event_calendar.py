@@ -9,7 +9,7 @@ from pathlib import Path
 def load_fomc_dates(csv_path: Path | None = None) -> pd.DatetimeIndex:
     """Load FOMC announcement dates from CSV."""
     if csv_path is None:
-        from qqq_trading.utils.paths import DATA_DIR
+        from utils.paths import DATA_DIR
         csv_path = DATA_DIR / "fomc_dates.csv"
     df = pd.read_csv(csv_path)
     return pd.DatetimeIndex(pd.to_datetime(df["date"]))

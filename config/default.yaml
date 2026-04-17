@@ -6,7 +6,7 @@
 data:
   # 经拆股/分红调整的 QQQ 1分钟K线 (410万根, 2000-2026)
   # Split/dividend-adjusted QQQ 1-min OHLCV bars (4.1M rows, 2000-2026)
-  raw_data: "data/QQQ_1min_adjusted.parquet"
+  raw_data: "datasets/QQQ_1min_adjusted.parquet"
 
   # 外部市场数据缓存 (VIX/VVIX/国债收益率), 避免重复下载
   # Cache for external market data (VIX/VVIX/Treasury yields) from yfinance

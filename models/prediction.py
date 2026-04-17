@@ -8,11 +8,11 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from qqq_trading.models.training import load_model
-from qqq_trading.features.base import engineer_base_features
-from qqq_trading.features.external import engineer_all_external
-from qqq_trading.features.interactions import build_interaction_features
-from qqq_trading.features.registry import get_full_features, get_base_features
+from models.training import load_model
+from features.base import engineer_base_features
+from features.external import engineer_all_external
+from features.interactions import build_interaction_features
+from features.registry import get_full_features, get_base_features
 
 
 @dataclass

@@ -1,6 +1,6 @@
 """Tests for CLI predict module."""
-from qqq_trading.cli.predict import parse_args, format_text, format_json
-from qqq_trading.models.prediction import PredictionResult
+from cli.predict import parse_args, format_text, format_json
+from models.prediction import PredictionResult
 
 
 def test_parse_args_defaults():

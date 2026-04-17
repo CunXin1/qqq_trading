@@ -1,6 +1,6 @@
 """Tests for model evaluation module."""
 import numpy as np
-from qqq_trading.models.evaluation import (
+from models.evaluation import (
     evaluate_model, backtest_thresholds, find_optimal_threshold,
 )
 

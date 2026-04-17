@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 
-from qqq_trading.utils.paths import OUTPUT_DIR, CHART_DIR
-from qqq_trading.utils.plotting import setup_matplotlib
+from utils.paths import OUTPUT_DIR, CHART_DIR
+from utils.plotting import setup_matplotlib
 
 setup_matplotlib()
 

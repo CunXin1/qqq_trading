@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
 import lightgbm as lgb
 
-from qqq_trading.config import ModelConfig
+from config import ModelConfig
 
 
 def create_model(

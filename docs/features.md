@@ -9,7 +9,7 @@ All features use `shift(1)` to avoid look-ahead bias — every feature is comput
 ## Usage / 使用方法
 
 ```python
-from qqq_trading.features import (
+from features import (
     engineer_base_features,
     engineer_all_external,
     build_interaction_features,
@@ -216,7 +216,7 @@ Smoothness and trend dependency features over 63-day and 126-day windows. These 
 > `features.registry` 是所有特征列表的**唯一真相来源**。永远不要在其他地方硬编码特征名——始终从注册表导入。
 
 ```python
-from qqq_trading.features.registry import (
+from features.registry import (
     get_base_features,              # 53 features / 53个特征
     get_refined_external_features,  # 26 features / 26个特征
     get_interaction_features,       # 43 features / 43个特征

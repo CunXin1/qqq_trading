@@ -2,11 +2,11 @@
 import numpy as np
 import tempfile
 from pathlib import Path
-from qqq_trading.models.training import (
+from models.training import (
     create_model, train_model, compute_pos_weight,
     save_model, load_model,
 )
-from qqq_trading.config import ModelConfig
+from config import ModelConfig
 
 
 def test_create_xgboost():

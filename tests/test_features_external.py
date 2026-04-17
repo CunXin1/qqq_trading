@@ -1,16 +1,16 @@
 """Tests for external feature engineering."""
 import numpy as np
-from qqq_trading.features.external import (
+from features.external import (
     engineer_vrp_features, engineer_vix_dynamics,
     engineer_vvix_features, engineer_rate_features,
     engineer_all_external,
 )
-from qqq_trading.features.registry import get_refined_external_features
+from features.registry import get_refined_external_features
 
 
 def test_vrp_features(sample_daily_metrics, sample_external_data):
     # Need realized vol first
-    from qqq_trading.features.base import engineer_base_features
+    from features.base import engineer_base_features
     df = engineer_base_features(sample_daily_metrics)
     ext = sample_external_data.reindex(df.index, method="ffill")
     df = engineer_vrp_features(df, ext)
@@ -22,7 +22,7 @@ def test_vrp_features(sample_daily_metrics, sample_external_data):
 
 
 def test_vix_dynamics(sample_daily_metrics, sample_external_data):
-    from qqq_trading.features.base import engineer_base_features
+    from features.base import engineer_base_features
     df = engineer_base_features(sample_daily_metrics)
     ext = sample_external_data.reindex(df.index, method="ffill")
     df = engineer_vix_dynamics(df, ext)
@@ -34,7 +34,7 @@ def test_vix_dynamics(sample_daily_metrics, sample_external_data):
 
 
 def test_rate_features(sample_daily_metrics, sample_external_data):
-    from qqq_trading.features.base import engineer_base_features
+    from features.base import engineer_base_features
     df = engineer_base_features(sample_daily_metrics)
     ext = sample_external_data.reindex(df.index, method="ffill")
     df = engineer_rate_features(df, ext)
@@ -45,7 +45,7 @@ def test_rate_features(sample_daily_metrics, sample_external_data):
 
 
 def test_all_external_features(sample_daily_metrics, sample_external_data):
-    from qqq_trading.features.base import engineer_base_features
+    from features.base import engineer_base_features
     df = engineer_base_features(sample_daily_metrics)
     df = engineer_all_external(df, sample_external_data)
 

@@ -1,5 +1,5 @@
 """Tests for config module."""
-from qqq_trading.config import Config, load_config, ModelConfig, SplitConfig
+from config import Config, load_config, ModelConfig, SplitConfig
 
 
 def test_default_config():

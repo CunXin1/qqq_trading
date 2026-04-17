@@ -11,6 +11,10 @@ Phase 10 (research): Options-oriented backtest for 0DTE and 1DTE straddles.
 
 Refactored to import from qqq_trading package instead of duplicating code.
 """
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import pandas as pd
 import numpy as np
 import warnings
@@ -18,14 +22,14 @@ warnings.filterwarnings("ignore")
 
 from sklearn.metrics import roc_auc_score, average_precision_score, brier_score_loss
 
-from qqq_trading.utils.paths import OUTPUT_DIR, CHART_DIR
-from qqq_trading.utils.plotting import setup_matplotlib
-from qqq_trading.features.registry import (
+from utils.paths import OUTPUT_DIR, CHART_DIR
+from utils.plotting import setup_matplotlib
+from features.registry import (
     get_base_features, get_refined_external_features, get_interaction_features,
     get_full_features, get_0dte_premarket_features,
 )
-from qqq_trading.models.training import create_model, compute_pos_weight
-from qqq_trading.config import ModelConfig
+from models.training import create_model, compute_pos_weight
+from config import ModelConfig
 
 setup_matplotlib()
 import matplotlib.pyplot as plt

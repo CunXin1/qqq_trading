@@ -1,5 +1,5 @@
 """Tests for feature registry — single source of truth."""
-from qqq_trading.features.registry import (
+from features.registry import (
     get_base_features, get_refined_external_features,
     get_interaction_features, get_path_features,
     get_full_features, get_0dte_premarket_features,

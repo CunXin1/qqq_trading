@@ -1,6 +1,6 @@
 """Tests for time-series splitting utilities."""
 import pandas as pd
-from qqq_trading.utils.splits import date_split, walk_forward_splits
+from utils.splits import date_split, walk_forward_splits
 
 
 def test_date_split_no_overlap():

@@ -5,10 +5,10 @@ import pandas as pd
 
 def test_path_features_smoke(sample_daily_metrics, sample_external_data):
     """Smoke test: path features can be computed without errors."""
-    from qqq_trading.features.base import engineer_base_features
-    from qqq_trading.features.external import engineer_all_external
-    from qqq_trading.features.interactions import build_interaction_features
-    from qqq_trading.features.path import build_path_features
+    from features.base import engineer_base_features
+    from features.external import engineer_all_external
+    from features.interactions import build_interaction_features
+    from features.path import build_path_features
 
     df = engineer_base_features(sample_daily_metrics)
     df = engineer_all_external(df, sample_external_data)

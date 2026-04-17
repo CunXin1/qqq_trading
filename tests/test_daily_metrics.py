@@ -1,7 +1,7 @@
 """Tests for daily metrics module."""
 import pandas as pd
 import numpy as np
-from qqq_trading.data.daily_metrics import (
+from data.daily_metrics import (
     compute_regular_session_metrics,
     compute_intraday_extremes,
 )
