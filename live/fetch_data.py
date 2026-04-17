@@ -2,11 +2,11 @@
 Fetch market data for QQQ prediction: IBKR first, yfinance fallback.
 
 Usage:
-    python -m qqq_trading.live.fetch_data                      # auto: IBKR -> yfinance
-    python -m qqq_trading.live.fetch_data --days 10
-    python -m qqq_trading.live.fetch_data --source ibkr --port 7496
-    python -m qqq_trading.live.fetch_data --source yfinance
-    python -m qqq_trading.live.fetch_data --validate --csv
+    python -m live.fetch_data                      # auto: IBKR -> yfinance
+    python -m live.fetch_data --days 10
+    python -m live.fetch_data --source ibkr --port 7496
+    python -m live.fetch_data --source yfinance
+    python -m live.fetch_data --validate --csv
 """
 
 import argparse
@@ -447,7 +447,7 @@ async def fetch_from_source(source, days):
 
 
 async def run(args):
-    out_dir = Path(__file__).resolve().parents[2] / args.output
+    out_dir = Path(__file__).resolve().parents[1] / args.output
     out_dir.mkdir(exist_ok=True)
 
     source_used = None
@@ -649,7 +649,7 @@ def _live_qqq_to_daily_metrics(qqq, premarket):
 
 def merge_with_historical(qqq, premarket, vix, yields, source_name):
     """Merge live data into historical parquets, update in place."""
-    from qqq_trading.utils.paths import OUTPUT_DIR
+    from utils.paths import OUTPUT_DIR
 
     print(f"\n{'=' * 70}")
     print("MERGING LIVE DATA INTO HISTORICAL PARQUETS")

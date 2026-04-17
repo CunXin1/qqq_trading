@@ -1,7 +1,7 @@
-"""Entry point: python -m qqq_trading.server"""
+"""Entry point: python -m server"""
 import argparse
 import uvicorn
-from qqq_trading.server.app import create_app
+from server.app import create_app
 
 def main():
     parser = argparse.ArgumentParser(description="QQQ Trading Dashboard")

@@ -44,8 +44,8 @@ def parse_args(argv=None):
 def run_prediction(args):
     """Execute prediction pipeline."""
     import pandas as pd
-    from qqq_trading.utils.paths import OUTPUT_DIR, MODEL_DIR
-    from qqq_trading.models.prediction import predict
+    from utils.paths import OUTPUT_DIR, MODEL_DIR
+    from models.prediction import predict
 
     # Load daily metrics
     daily_path = OUTPUT_DIR / "daily_metrics.parquet"
@@ -59,7 +59,7 @@ def run_prediction(args):
     # Load external data
     ext_path = OUTPUT_DIR / "external_data.parquet"
     if args.refresh_external or not ext_path.exists():
-        from qqq_trading.data.external_data import download_external_data
+        from data.external_data import download_external_data
         ext = download_external_data(ext_path)
     else:
         ext = pd.read_parquet(ext_path)

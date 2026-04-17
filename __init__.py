@@ -17,16 +17,16 @@ Quick start:
     result = predict(model_path, daily_metrics, external_data)
 
 Subpackages:
-    qqq_trading.data        — Data loading (1-min aggregation, VIX/rates, event calendar)
-    qqq_trading.features    — Feature engineering (base, external, interactions, path)
-    qqq_trading.models      — Model training, evaluation, and inference
-    qqq_trading.utils       — Paths, plotting, time-series splits
-    qqq_trading.cli         — Command-line tools (predict, pipeline)
+    data        — Data loading (1-min aggregation, VIX/rates, event calendar)
+    features    — Feature engineering (base, external, interactions, path)
+    models      — Model training, evaluation, and inference
+    utils       — Paths, plotting, time-series splits
+    cli         — Command-line tools (predict, pipeline)
 """
 __version__ = "1.0.0"
 
-from qqq_trading.config import Config, load_config
-from qqq_trading.models.training import train_model, load_model, save_model
-from qqq_trading.models.evaluation import evaluate_model, backtest_thresholds
-from qqq_trading.models.prediction import predict, build_features_for_prediction as build_features
-from qqq_trading.features.registry import get_full_features, get_base_features
+from config import Config, load_config
+from models.training import train_model, load_model, save_model
+from models.evaluation import evaluate_model, backtest_thresholds
+from models.prediction import predict, build_features_for_prediction as build_features
+from features.registry import get_full_features, get_base_features

@@ -34,16 +34,16 @@ def main(argv=None):
 
     import numpy as np
     import pandas as pd
-    from qqq_trading.utils.paths import OUTPUT_DIR, MODEL_DIR, DATA_DIR
-    from qqq_trading.config import load_config
-    from qqq_trading.data.daily_metrics import load_1min_data, build_daily_metrics
-    from qqq_trading.data.external_data import download_external_data
-    from qqq_trading.features.base import engineer_base_features
-    from qqq_trading.features.external import engineer_all_external
-    from qqq_trading.features.interactions import build_interaction_features
-    from qqq_trading.features.registry import get_full_features
-    from qqq_trading.models.training import train_model, save_model, compute_pos_weight
-    from qqq_trading.models.evaluation import evaluate_model, backtest_thresholds
+    from utils.paths import OUTPUT_DIR, MODEL_DIR, DATA_DIR
+    from config import load_config
+    from data.daily_metrics import load_1min_data, build_daily_metrics
+    from data.external_data import download_external_data
+    from features.base import engineer_base_features
+    from features.external import engineer_all_external
+    from features.interactions import build_interaction_features
+    from features.registry import get_full_features
+    from models.training import train_model, save_model, compute_pos_weight
+    from models.evaluation import evaluate_model, backtest_thresholds
 
     config = load_config()
     model_config = getattr(config.model, args.preset)

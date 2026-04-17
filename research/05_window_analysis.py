@@ -19,11 +19,11 @@ warnings.filterwarnings("ignore")
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, average_precision_score, brier_score_loss
 
-from qqq_trading.utils.paths import OUTPUT_DIR, CHART_DIR
-from qqq_trading.utils.plotting import setup_matplotlib
-from qqq_trading.features.registry import get_base_features
-from qqq_trading.models.training import create_model, compute_pos_weight
-from qqq_trading.config import ModelConfig
+from utils.paths import OUTPUT_DIR, CHART_DIR
+from utils.plotting import setup_matplotlib
+from features.registry import get_base_features
+from models.training import create_model, compute_pos_weight
+from config import ModelConfig
 
 setup_matplotlib()
 

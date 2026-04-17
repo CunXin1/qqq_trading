@@ -71,7 +71,7 @@ def load_config(path: Optional[Path] = None) -> Config:
 
     If no path is given, looks for config/default.yaml relative to project root.
     """
-    from qqq_trading.utils.paths import PROJECT_ROOT
+    from utils.paths import PROJECT_ROOT
 
     config = Config()
 
