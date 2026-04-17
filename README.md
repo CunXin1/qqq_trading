@@ -13,52 +13,45 @@ Based on QQQ 1-minute OHLCV data (2000-2026, ~4.1M bars), this project:
 ```
 qqq_trading/
 ├── pyproject.toml                    # Package config & dependencies
+├── config.py                         # Config dataclass + YAML loader
 ├── config/
 │   └── default.yaml                  # Centralized parameters
-├── data/
+├── datasets/                         # Raw data files
 │   ├── fomc_dates.csv                # FOMC announcement dates (2000-2026)
 │   ├── QQQ_1min_adjusted.parquet     # Split/dividend adjusted, 4.1M bars
 │   └── QQQ_1min_unadjusted.parquet   # Raw prices
-├── qqq_trading/                      # Core library
-│   ├── config.py                     # Config dataclass + YAML loader
-│   ├── data/
-│   │   ├── daily_metrics.py          # 1-min → daily OHLCV aggregation
-│   │   ├── external_data.py          # VIX/VVIX/rates via yfinance
-│   │   └── event_calendar.py         # FOMC/NFP/earnings calendar
-│   ├── features/
-│   │   ├── base.py                   # 53 base features (price/volume)
-│   │   ├── external.py               # VRP, VIX dynamics, rates, events
-│   │   ├── interactions.py           # VRP × catalyst cross features
-│   │   ├── path.py                   # Smoothness / path dependency
-│   │   └── registry.py              # Canonical feature lists
-│   ├── models/
-│   │   ├── training.py               # Unified model creation & training
-│   │   ├── evaluation.py             # Metrics, backtest, thresholds
-│   │   └── prediction.py             # Load model & inference
-│   ├── utils/
-│   │   ├── paths.py                  # Project path constants
-│   │   ├── plotting.py               # Matplotlib setup & helpers
-│   │   └── splits.py                 # Time-series splitting
-│   └── cli/
-│       ├── predict.py                # Daily prediction CLI
-│       └── pipeline.py               # Full retrain pipeline
+├── data/                             # Data processing modules
+│   ├── daily_metrics.py              # 1-min → daily OHLCV aggregation
+│   ├── external_data.py              # VIX/VVIX/rates via yfinance
+│   └── event_calendar.py             # FOMC/NFP/earnings calendar
+��── features/                         # Feature engineering
+│   ├── base.py                       # 53 base features (price/volume)
+│   ├── external.py                   # VRP, VIX dynamics, rates, events
+│   ├── interactions.py               # VRP × catalyst cross features
+│   ├── path.py                       # Smoothness / path dependency
+│   └── registry.py                   # Canonical feature lists
+├── models/                           # Model training/evaluation/inference
+│   ├── training.py
+│   ├── evaluation.py
+│   └── prediction.py
+├── live/                             # Live trading
+│   ├── fetch_data.py                 # IBKR/yfinance data fetcher
+│   ├── notify.py                     # Bark push notifications
+│   └── trader.py                     # 0DTE auto-trader
+├── server/                           # Web dashboard
+│   ├── app.py
+│   └── services.py
+├── utils/                            # Utilities
+│   ├── paths.py                      # Project path constants
+│   ├── plotting.py                   # Matplotlib setup & helpers
+│   └── splits.py                     # Time-series splitting
+├── cli/                              # Command-line tools
+│   ├── predict.py                    # Daily prediction CLI
+│   └── pipeline.py                   # Full retrain pipeline
+├── eval/                             # Evaluation scripts
 ├── research/                         # Research & analysis scripts
-│   ├── 01_daily_metrics.py
-│   ├── 02_pattern_analysis.py
-│   ├── 04_report.py
-│   ├── 05_window_analysis.py
-│   ├── 09_full_backtest.py
-│   ├── 10_options_backtest.py
-│   ├── 12_robustness_test.py
-│   └── 13_occam_razor.py
-├── tests/                            # pytest test suite (53 tests)
-│   ├── conftest.py
-│   ├── test_config.py
-│   ├── test_daily_metrics.py
-│   ├── test_features_*.py
-│   ├── test_training.py
-│   ├── test_evaluation.py
-│   └── ...
+├── tests/                            # pytest test suite
+├── docs/                             # Documentation
 └── output/                           # Generated outputs
     ├── model/                        # Saved models (joblib)
     ├── charts/                       # Analysis charts (PNG)
@@ -72,11 +65,11 @@ qqq_trading/
 pip install -e ".[dev]"
 
 # Run prediction (uses saved models)
-python -m qqq_trading.cli.predict --mode both --threshold 0.5
-python -m qqq_trading.cli.predict --format json
+python -m cli.predict --mode both --threshold 0.5
+python -m cli.predict --format json
 
 # Retrain model
-python -m qqq_trading.cli.pipeline --preset production --train-end 2022-12-31
+python -m cli.pipeline --preset production --train-end 2022-12-31
 
 # Run tests
 pytest tests/ -v
@@ -87,8 +80,8 @@ python research/12_robustness_test.py
 ```
 
 ## Data
-- `data/QQQ_1min_adjusted.parquet` — Split/dividend adjusted, 4,124,413 bars
-- `data/QQQ_1min_unadjusted.parquet` — Raw prices
+- `datasets/QQQ_1min_adjusted.parquet` — Split/dividend adjusted, 4,124,413 bars
+- `datasets/QQQ_1min_unadjusted.parquet` — Raw prices
 - Coverage: 2000-01-03 to 2026-02-20, 6,572 trading days
 - Extended hours: pre-market (4:00-9:29) + post-market (16:01-19:59)
 

@@ -4,8 +4,8 @@
 
 | File | Size | Description |
 |------|------|-------------|
-| `data/QQQ_1min_adjusted.parquet` | 75 MB | Split/dividend adjusted 1-min OHLCV |
-| `data/QQQ_1min_unadjusted.parquet` | 70 MB | Raw unadjusted prices |
+| `datasets/QQQ_1min_adjusted.parquet` | 75 MB | Split/dividend adjusted 1-min OHLCV |
+| `datasets/QQQ_1min_unadjusted.parquet` | 70 MB | Raw unadjusted prices |
 
 - **Coverage**: 2000-01-03 to 2026-02-20
 - **Total bars**: 4,124,413 candlesticks across 6,572 trading days
@@ -37,14 +37,14 @@
 
 ## Daily Metrics / 日线指标
 
-`qqq_trading.data.daily_metrics` aggregates 1-minute data into 35 daily fields.
+`data.daily_metrics` aggregates 1-minute data into 35 daily fields.
 
-> `qqq_trading.data.daily_metrics` 将1分钟数据聚合为35个日线字段。
+> `data.daily_metrics` 将1分钟数据聚合为35个日线字段。
 
 ```python
-from qqq_trading.data import load_1min_data, build_daily_metrics
+from data import load_1min_data, build_daily_metrics
 
-raw = load_1min_data(Path("data/QQQ_1min_adjusted.parquet"))
+raw = load_1min_data(Path("datasets/QQQ_1min_adjusted.parquet"))
 daily = build_daily_metrics(raw)  # -> DataFrame (6572 x 35)
 ```
 
@@ -101,12 +101,12 @@ daily = build_daily_metrics(raw)  # -> DataFrame (6572 x 35)
 
 ## External Data / 外部市场数据
 
-`qqq_trading.data.external_data` downloads and caches VIX/VVIX/Treasury yields from Yahoo Finance.
+`data.external_data` downloads and caches VIX/VVIX/Treasury yields from Yahoo Finance.
 
-> `qqq_trading.data.external_data` 从 Yahoo Finance 下载并缓存 VIX/VVIX/国债收益率数据。
+> `data.external_data` 从 Yahoo Finance 下载并缓存 VIX/VVIX/国债收益率数据。
 
 ```python
-from qqq_trading.data import download_external_data
+from data import download_external_data
 
 ext = download_external_data()  # cached in output/external_data.parquet
 # Force refresh: download_external_data(force=True)
@@ -136,14 +136,14 @@ Each ticker provides `open`, `high`, `low`, `close` columns (4 per ticker, 20 to
 
 ## Event Calendar / 事件日历
 
-`qqq_trading.data.event_calendar` provides FOMC, NFP, and earnings season dates.
+`data.event_calendar` provides FOMC, NFP, and earnings season dates.
 
-> `qqq_trading.data.event_calendar` 提供 FOMC、非农就业报告（NFP）和财报季日期。
+> `data.event_calendar` 提供 FOMC、非农就业报告（NFP）和财报季日期。
 
 ```python
-from qqq_trading.data import load_fomc_dates, compute_nfp_dates
+from data import load_fomc_dates, compute_nfp_dates
 
-fomc = load_fomc_dates()              # 216 dates from data/fomc_dates.csv
+fomc = load_fomc_dates()              # 216 dates from datasets/fomc_dates.csv
 nfp = compute_nfp_dates(2000, 2026)   # first Friday of each month
 ```
 
@@ -151,13 +151,13 @@ nfp = compute_nfp_dates(2000, 2026)   # first Friday of each month
 
 | Event | Source | Frequency | Impact |
 |-------|--------|-----------|--------|
-| **FOMC** | `data/fomc_dates.csv` (manual) | 8x/year (+ unscheduled) | Highest — rate decisions move all risk assets |
+| **FOMC** | `datasets/fomc_dates.csv` (manual) | 8x/year (+ unscheduled) | Highest — rate decisions move all risk assets |
 | **NFP** | Algorithmically computed (1st Friday of month) | 12x/year | High — labor market data, often surprises |
 | **Earnings Season** | Rule-based (late Jan/Apr/Jul/Oct + first 2 weeks next month) | 4x/year | Medium — elevated vol from tech mega-caps |
 
 > | 事件 | 数据来源 | 频率 | 影响程度 |
 > |------|---------|------|---------|
-> | **FOMC** | `data/fomc_dates.csv`（手动维护） | 每年8次（+不定期紧急会议） | 最高——利率决议影响所有风险资产 |
+> | **FOMC** | `datasets/fomc_dates.csv`（手动维护） | 每年8次（+不定期紧急会议） | 最高——利率决议影响所有风险资产 |
 > | **NFP** | 算法计算（每月第一个周五） | 每年12次 | 高——就业数据经常超预期 |
 > | **财报季** | 规则判定（1/4/7/10月下旬 + 次月前两周） | 每年4次 | 中——科技巨头财报带来波动 |
 
@@ -185,6 +185,6 @@ nfp = compute_nfp_dates(2000, 2026)   # first Friday of each month
 
 ### Maintaining FOMC Dates / 维护 FOMC 日期
 
-To add new FOMC dates, simply append rows to `data/fomc_dates.csv`. The file contains one date per line (YYYY-MM-DD format). Both scheduled and emergency meetings should be included.
+To add new FOMC dates, simply append rows to `datasets/fomc_dates.csv`. The file contains one date per line (YYYY-MM-DD format). Both scheduled and emergency meetings should be included.
 
-> 新增 FOMC 日期只需在 `data/fomc_dates.csv` 中追加行即可。文件格式为每行一个日期（YYYY-MM-DD）。定期会议和紧急会议都应包含在内。
+> 新增 FOMC 日期只需在 `datasets/fomc_dates.csv` 中追加行即可。文件格式为每行一个日期（YYYY-MM-DD）。定期会议和紧急会议都应包含在内。

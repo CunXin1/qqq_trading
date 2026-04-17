@@ -28,7 +28,7 @@
 
 1. **Run 1DTE model** to assess tomorrow's probability:
    ```bash
-   python -m qqq_trading.cli.predict --mode 1dte --format text
+   python -m cli.predict --mode 1dte --format text
    ```
 2. **Check catalysts**: Is there an FOMC meeting, NFP release, or are we in earnings season?
 3. **Check VRP status**:
@@ -48,7 +48,7 @@
 1. **Monitor pre-market amplitude and volume** — large pre-market range is one of the strongest 0DTE signals
 2. **Run 0DTE model**:
    ```bash
-   python -m qqq_trading.cli.predict --mode 0dte --format text
+   python -m cli.predict --mode 0dte --format text
    ```
 3. **Decision**: If 0DTE Range>2% confidence ≥ 0.6 → buy ATM straddle at 9:30 open
 4. **Automated flow**: `live/notify.py` runs at 9:29 AM ET and sends a Bark push notification with the signal

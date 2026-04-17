@@ -32,15 +32,16 @@ dev = [
 ]
 
 [project.scripts]
-qqq-predict = "qqq_trading.cli.predict:main"
-qqq-pipeline = "qqq_trading.cli.pipeline:main"
-qqq-server = "qqq_trading.server.__main__:main"
+qqq-predict = "cli.predict:main"
+qqq-pipeline = "cli.pipeline:main"
+qqq-server = "server.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
+exclude = ["tests*", "eval*", "research*", "docs*", "datasets*", "output*", "config"]
 
 [tool.setuptools.package-data]
-"qqq_trading.server" = ["templates/*.html", "static/*.css"]
+"server" = ["templates/*.html", "static/*.css"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

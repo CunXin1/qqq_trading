@@ -52,11 +52,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import pandas as pd
 import numpy as np
-from qqq_trading.models.training import load_model
-from qqq_trading.features.base import engineer_base_features
-from qqq_trading.features.external import engineer_all_external
-from qqq_trading.features.interactions import build_interaction_features
-from qqq_trading.utils.paths import OUTPUT_DIR, MODEL_DIR
+from models.training import load_model
+from features.base import engineer_base_features
+from features.external import engineer_all_external
+from features.interactions import build_interaction_features
+from utils.paths import OUTPUT_DIR, MODEL_DIR
 
 
 def parse_args():

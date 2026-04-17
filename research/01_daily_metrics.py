@@ -1,7 +1,7 @@
 """
 Phase 1: Build daily metrics from 1-min QQQ data.
 
-Thin wrapper around qqq_trading.data.daily_metrics — computes returns,
+Thin wrapper around data.daily_metrics — computes returns,
 ranges, pre-market signals, volume metrics, and large-move flags.
 """
 import sys
@@ -10,8 +10,8 @@ from pathlib import Path
 # Ensure the package is importable when running standalone.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from qqq_trading.utils.paths import OUTPUT_DIR, DATA_DIR, PROJECT_ROOT
-from qqq_trading.data.daily_metrics import (
+from utils.paths import OUTPUT_DIR, DATA_DIR, PROJECT_ROOT
+from data.daily_metrics import (
     load_1min_data,
     build_daily_metrics,
 )

@@ -22,8 +22,8 @@ env/
 .pytest_cache/
 
 # Data files (too large for git)
-data/QQQ_1min_adjusted.parquet
-data/QQQ_1min_unadjusted.parquet
+datasets/QQQ_1min_adjusted.parquet
+datasets/QQQ_1min_unadjusted.parquet
 
 # Output (generated, not source)
 output/

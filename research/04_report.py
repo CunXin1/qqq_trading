@@ -15,7 +15,7 @@ import numpy as np
 import base64
 from datetime import datetime
 
-from qqq_trading.utils.paths import OUTPUT_DIR, CHART_DIR
+from utils.paths import OUTPUT_DIR, CHART_DIR
 
 
 def img_to_base64(path):
