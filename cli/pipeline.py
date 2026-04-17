@@ -6,8 +6,27 @@ import sys
 from pathlib import Path
 
 
+# target → (source column in daily_metrics, shift, display name)
+# shift=0: predict TODAY's outcome (0DTE). shift=-1: predict NEXT day's outcome (1DTE).
+TARGETS = {
+    "range_0dte": {"col": "intraday_range",     "shift": 0,  "desc": "0DTE intraday range (H-L)/O"},
+    "otc_0dte":   {"col": "abs_open_to_close",  "shift": 0,  "desc": "0DTE |O2C|"},
+    "c2c_1dte":   {"col": "abs_close_to_close", "shift": -1, "desc": "1DTE next-day |C2C|"},
+    "otc_1dte":   {"col": "abs_open_to_close",  "shift": -1, "desc": "1DTE next-day |O2C|"},
+}
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="QQQ model retraining pipeline")
+    parser.add_argument(
+        "--target", type=str, default="c2c_1dte",
+        choices=list(TARGETS.keys()),
+        help="Prediction target (default: c2c_1dte — matches legacy interaction_model)"
+    )
+    parser.add_argument(
+        "--thresh", type=float, default=0.02,
+        help="Move threshold as decimal (default: 0.02 = 2%%)"
+    )
     parser.add_argument(
         "--model-type", type=str, default="xgboost",
         choices=["xgboost", "lightgbm", "random_forest"],
@@ -25,6 +44,10 @@ def parse_args(argv=None):
     parser.add_argument(
         "--refresh-external", action="store_true",
         help="Force re-download of external data"
+    )
+    parser.add_argument(
+        "--output-name", type=str, default=None,
+        help="Override output model filename stem (default: <target>_<thresh>pct)"
     )
     return parser.parse_args(argv)
 
@@ -78,8 +101,12 @@ def main(argv=None):
 
     # Step 4: Train
     print("Step 4: Training model...")
-    target_col = "target_next_day_2pct"
-    df[target_col] = df["abs_close_to_close_gt_2pct"].shift(-1).astype(float)
+    tc = TARGETS[args.target]
+    thresh_pct = int(round(args.thresh * 100))
+    target_col = f"target_{args.target}_{thresh_pct}pct"
+    # Build binary target: value > thresh, with appropriate shift (-1 for 1DTE, 0 for 0DTE)
+    df[target_col] = (df[tc["col"]] > args.thresh).shift(tc["shift"]).astype(float)
+    print(f"  Target: {args.target} ({tc['desc']}) > {args.thresh:.0%}, shift={tc['shift']}")
 
     feature_cols = get_full_features(include_interactions=True)
     available = [f for f in feature_cols if f in df.columns]
@@ -93,7 +120,8 @@ def main(argv=None):
     X_test = test[available].values
     y_test = test[target_col].values.astype(int)
 
-    print(f"  Train: {len(train)} samples, Test: {len(test)} samples")
+    print(f"  Train: {len(train)} samples (base rate: {y_train.mean():.2%})")
+    print(f"  Test:  {len(test)} samples (base rate: {y_test.mean():.2%})")
     print(f"  Features: {len(available)}, Preset: {args.preset}")
 
     model = train_model(X_train, y_train, args.model_type, model_config, config.random_state)
@@ -111,10 +139,12 @@ def main(argv=None):
 
     # Step 6: Save
     print("\nStep 6: Saving model...")
-    save_model(model, available, MODEL_DIR / "interaction_model.joblib")
-    print(f"  Saved to {MODEL_DIR / 'interaction_model.joblib'}")
+    stem = args.output_name or f"{args.target}_{thresh_pct}pct_model"
+    model_path = MODEL_DIR / f"{stem}.joblib"
+    save_model(model, available, model_path)
+    print(f"  Saved to {model_path}")
 
-    # Save features parquet
+    # Save features parquet (shared across targets — same feature set)
     df.to_parquet(OUTPUT_DIR / "interaction_features.parquet")
     print("Done.")
 

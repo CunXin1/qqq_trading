@@ -182,6 +182,31 @@ def print_monthly_summary(alerts):
         )
 
 
+def print_false_alarms(alerts, hit_range=2.0):
+    """Print signal days where model predicted a big move but actual range was <= threshold.
+    打印模型发出信号但实际未达波动阈值的日子（假阳性）。
+
+    These are FALSE POSITIVES. Actual range is shown so you can see how close
+    the day came to the threshold.
+    这些是假阳性。同时显示当天实际波动，方便判断离阈值有多远。
+    """
+    fp = alerts[alerts["range_pct"] <= hit_range]
+    print(f"FALSE ALARMS (signal fired, actual range <= {hit_range}%): {len(fp)} days")
+    print(f"假阳性（发出信号但实际范围 <= {hit_range}%）：{len(fp)} 天")
+
+    if len(fp) == 0:
+        return
+
+    print(f"{'Date':<12} {'Prob':>5} {'Sig':>4} {'Range%':>7} {'C2C%':>6} {'O2C%':>6} "
+          f"{'MaxDD%':>7} {'MaxRU%':>7} {'RV20%':>6} {'Events':>12}")
+    print("-" * 88)
+    for date, r in fp.iterrows():
+        evt = format_events(r)
+        print(f"{str(date.date()):<12} {r['prob']:>5.3f} {r['signal']:>4} "
+              f"{r['range_pct']:>7.2f} {r['c2c_ret']:>6.2f} {r['o2c_ret']:>6.2f} "
+              f"{r['max_dd']:>7.2f} {r['max_ru']:>7.2f} {r['rv20']:>6.1f} {evt:>12}")
+
+
 def print_missed_moves(signals, threshold, miss_range):
     """Print days with big moves but no signal — the model's blind spots.
     打印有大波动但无信号的日子——模型的盲区。
@@ -244,6 +269,11 @@ def main():
     print()
     print("=" * 100)
     print_missed_moves(signals, args.threshold, args.miss_range)
+
+    # ── Section 4: False alarms / 第四部分：假阳性 ──
+    print()
+    print("=" * 100)
+    print_false_alarms(alerts)
 
     # ── CSV export / CSV导出 ──
     if args.csv:
