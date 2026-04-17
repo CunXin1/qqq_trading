@@ -24,7 +24,7 @@ qqq_trading/
 │   ├── daily_metrics.py              # 1-min → daily OHLCV aggregation
 │   ├── external_data.py              # VIX/VVIX/rates via yfinance
 │   └── event_calendar.py             # FOMC/NFP/earnings calendar
-��── features/                         # Feature engineering
+── features/                         # Feature engineering
 │   ├── base.py                       # 53 base features (price/volume)
 │   ├── external.py                   # VRP, VIX dynamics, rates, events
 │   ├── interactions.py               # VRP × catalyst cross features
