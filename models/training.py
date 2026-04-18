@@ -121,9 +121,16 @@ def train_model(
     model_type: Literal["xgboost", "lightgbm", "random_forest"] = "xgboost",
     config: Optional[ModelConfig] = None,
     random_state: int = 42,
+    X_val: Optional[np.ndarray] = None,
+    y_val: Optional[np.ndarray] = None,
 ):
     """Train a model and return the fitted estimator.
     训练模型并返回已拟合的估计器。
+
+    If X_val/y_val are provided, uses early stopping (XGBoost/LightGBM only):
+    stops training when validation AUC doesn't improve for 50 rounds.
+    若提供 X_val/y_val，则使用早停（仅 XGBoost/LightGBM）：
+    当验证集 AUC 连续 50 轮未提升时停止训练。
 
     Automatically computes positive class weight from y_train distribution
     and handles NaN (RandomForest gets NaN→-999 imputation).
@@ -133,13 +140,24 @@ def train_model(
     pos_weight = compute_pos_weight(y_train)
     model = create_model(model_type, config, pos_weight, random_state)
 
-    # RandomForest can't handle NaN
     if model_type == "random_forest":
         X_fit = np.nan_to_num(X_train, nan=-999)
+        model.fit(X_fit, y_train)
+    elif X_val is not None and y_val is not None:
+        # Early stopping with validation set
+        fit_params = {
+            "eval_set": [(X_val, y_val)],
+            "verbose": False,
+        }
+        if model_type == "xgboost":
+            model.set_params(early_stopping_rounds=50, eval_metric="auc")
+        elif model_type == "lightgbm":
+            fit_params["callbacks"] = [lgb.early_stopping(50, verbose=False)]
+            fit_params["eval_metric"] = "auc"
+        model.fit(X_train, y_train, **fit_params)
     else:
-        X_fit = X_train
+        model.fit(X_train, y_train)
 
-    model.fit(X_fit, y_train)
     return model
 
 

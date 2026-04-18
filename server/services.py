@@ -65,7 +65,7 @@ def _load_model():
     _check_cache()
     if _cache["model"] is None:
         from models.training import load_model
-        model, feat_cols = load_model(MODEL_DIR / "interaction_2000_2019.joblib")
+        model, feat_cols = load_model(MODEL_DIR / "range_0dte_2pct_2000_2022.joblib")
         _cache["model"] = model
         _cache["feature_cols"] = feat_cols
     return _cache["model"], _cache["feature_cols"]
@@ -319,7 +319,7 @@ def get_model_info():
     info = {
         "model_type": type(model).__name__,
         "n_features": len(feature_cols) if feature_cols else 0,
-        "model_file": "interaction_2000_2019.joblib",
+        "model_file": "range_0dte_2pct_2000_2022.joblib",
         "features": feature_cols[:20] if feature_cols else [],  # show first 20
         "features_total": len(feature_cols) if feature_cols else 0,
     }

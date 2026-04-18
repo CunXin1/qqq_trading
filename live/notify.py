@@ -144,7 +144,7 @@ def run_prediction():
     df = engineer_all_external(df, ext)
     df = build_interaction_features(df)
 
-    model, feature_cols = load_model(MODEL_DIR / "interaction_2000_2019.joblib")
+    model, feature_cols = load_model(MODEL_DIR / "range_0dte_2pct_2000_2022.joblib")
     available = [f for f in feature_cols if f in df.columns]
 
     # Latest row = last trading day's features -> predicts today

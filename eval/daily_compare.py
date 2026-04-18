@@ -102,7 +102,7 @@ def main():
     df = build_interaction_features(df)
 
     # Load trained model / 加载训练好的模型
-    model, feature_cols = load_model(MODEL_DIR / "interaction_2000_2019.joblib")
+    model, feature_cols = load_model(MODEL_DIR / "range_0dte_2pct_2000_2022.joblib")
     available = [f for f in feature_cols if f in df.columns]
 
     # ── Slice date range / 截取日期范围 ──
