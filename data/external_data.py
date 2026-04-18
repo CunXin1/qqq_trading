@@ -91,6 +91,7 @@ def download_external_data(
         "^TNX": "tnx_10y",    # 10-year Treasury yield / 10年期国债收益率
         "^IRX": "irx_3m",     # 3-month T-bill yield / 3个月国库券收益率
         "^FVX": "fvx_5y",     # 5-year Treasury yield / 5年期国债收益率
+        "^SKEW": "skew",      # CBOE SKEW index — tail risk indicator / 尾部风险指标
     }
 
     end_date = (date.today() + pd.Timedelta(days=1)).isoformat()

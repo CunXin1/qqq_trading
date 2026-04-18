@@ -35,6 +35,23 @@ def create_app() -> FastAPI:
     app = FastAPI(title="QQQ Trading Dashboard")
     app.mount("/static", StaticFiles(directory=str(_DIR / "static")), name="static")
 
+    @app.on_event("startup")
+    async def startup_refresh():
+        """Auto-check data staleness on server startup and refresh via IBKR if stale.
+        服务器启动时自动检查数据过期状态，如过期则通过 IBKR 刷新。"""
+        try:
+            from data.refresh import check_staleness, refresh_if_stale
+            status = check_staleness()
+            if status["stale"]:
+                print(f"[startup] Data stale (last: {status['last_date']}, "
+                      f"target: {status['target_date']}). Refreshing in background...")
+                import asyncio
+                asyncio.create_task(refresh_if_stale())
+            else:
+                print(f"[startup] Data fresh (last: {status['last_date']})")
+        except Exception as e:
+            print(f"[startup] Auto-refresh check failed: {e}")
+
     @app.get("/")
     async def dashboard(request: Request):
         data = services.get_dashboard()

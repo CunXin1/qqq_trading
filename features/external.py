@@ -39,8 +39,9 @@ import pandas as pd
 import numpy as np
 
 from data.event_calendar import (
-    load_fomc_dates, compute_nfp_dates, _compute_eve_dates,
-    compute_days_to_event, compute_earnings_season,
+    load_fomc_dates, compute_nfp_dates, compute_cpi_dates, compute_pce_dates,
+    _compute_eve_dates, compute_days_to_event, compute_earnings_season,
+    load_megacap_earnings, build_megacap_earnings_flags,
 )
 
 
@@ -128,6 +129,35 @@ def engineer_vvix_features(df: pd.DataFrame, ext: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def engineer_skew_features(df: pd.DataFrame, ext: pd.DataFrame) -> pd.DataFrame:
+    """CBOE SKEW index features — tail risk and crash protection demand.
+    CBOE SKEW 指数特征——尾部风险和崩盘保护需求。
+
+    High SKEW = market buying OTM puts = expecting tail events.
+    高 SKEW = 市场在购买虚值看跌期权 = 预期尾部事件。
+
+    Produces 4 features / 生成 4 个特征:
+      skew_level:       SKEW index value (shifted 1d to avoid lookahead).
+                        SKEW 指数值（滞后 1 天防止未来信息泄露）。
+      skew_change_1d:   1-day SKEW change (tail risk acceleration).
+                        1 天 SKEW 变化（尾部风险加速度）。
+      skew_change_5d:   5-day SKEW change (tail risk trend).
+                        5 天 SKEW 变化（尾部风险趋势）。
+      skew_extreme:     Binary flag for SKEW > 150 (elevated tail risk).
+                        SKEW > 150 的标记（高尾部风险）。
+    """
+    if "skew_close" not in ext.columns:
+        return df
+
+    skew = ext["skew_close"]
+    df["skew_level"] = skew.shift(1)
+    df["skew_change_1d"] = skew.pct_change().shift(1)
+    df["skew_change_5d"] = skew.pct_change(5).shift(1)
+    df["skew_extreme"] = (skew.shift(1) > 150).astype(int)
+
+    return df
+
+
 def engineer_rate_features(df: pd.DataFrame, ext: pd.DataFrame) -> pd.DataFrame:
     """Interest rate and yield curve features.
     利率和收益率曲线特征。
@@ -194,12 +224,41 @@ def engineer_event_features(df: pd.DataFrame) -> pd.DataFrame:
     df["is_nfp_eve"] = df.index.isin(nfp_eve).astype(int)
     df["days_to_nfp"] = compute_days_to_event(df.index, nfp_dates, default=30)
 
+    # CPI features / CPI 特征
+    cpi_dates = compute_cpi_dates()
+    df["is_cpi_day"] = df.index.isin(cpi_dates).astype(int)
+    cpi_eve = _compute_eve_dates(cpi_dates)
+    df["is_cpi_eve"] = df.index.isin(cpi_eve).astype(int)
+    df["days_to_cpi"] = compute_days_to_event(df.index, cpi_dates, default=30)
+
+    # PCE features / PCE 特征
+    pce_dates = compute_pce_dates()
+    df["is_pce_day"] = df.index.isin(pce_dates).astype(int)
+    pce_eve = _compute_eve_dates(pce_dates)
+    df["is_pce_eve"] = df.index.isin(pce_eve).astype(int)
+
     # Combined macro event flags / 组合宏观事件标记
-    df["is_macro_event_day"] = ((df["is_fomc_day"] == 1) | (df["is_nfp_day"] == 1)).astype(int)
-    df["is_macro_event_eve"] = ((df["is_fomc_eve"] == 1) | (df["is_nfp_eve"] == 1)).astype(int)
+    df["is_macro_event_day"] = (
+        (df["is_fomc_day"] == 1) | (df["is_nfp_day"] == 1) |
+        (df["is_cpi_day"] == 1) | (df["is_pce_day"] == 1)
+    ).astype(int)
+    df["is_macro_event_eve"] = (
+        (df["is_fomc_eve"] == 1) | (df["is_nfp_eve"] == 1) |
+        (df["is_cpi_eve"] == 1) | (df["is_pce_eve"] == 1)
+    ).astype(int)
 
     # Earnings season / 财报季
     df["is_earnings_season"] = compute_earnings_season(df.index)
+
+    # Mega-cap earnings (NVDA/AAPL/MSFT) / 大型股财报
+    try:
+        earnings_df = load_megacap_earnings()
+        if not earnings_df.empty:
+            mc_flags = build_megacap_earnings_flags(df.index, earnings_df)
+            for col in mc_flags.columns:
+                df[col] = mc_flags[col]
+    except Exception:
+        pass  # graceful fallback if yfinance unavailable
 
     return df
 
@@ -228,6 +287,7 @@ def engineer_all_external(df: pd.DataFrame, ext: pd.DataFrame) -> pd.DataFrame:
     df = engineer_vrp_features(df, ext_aligned)
     df = engineer_vix_dynamics(df, ext_aligned)
     df = engineer_vvix_features(df, ext_aligned)
+    df = engineer_skew_features(df, ext_aligned)
     df = engineer_rate_features(df, ext_aligned)
     df = engineer_event_features(df)
     return df

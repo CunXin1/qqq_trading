@@ -13,4 +13,7 @@ This package provides three core data pipelines for the QQQ trading system:
 """
 from data.daily_metrics import load_1min_data, build_daily_metrics
 from data.external_data import download_external_data
-from data.event_calendar import load_fomc_dates, compute_nfp_dates
+from data.event_calendar import (
+    load_fomc_dates, compute_nfp_dates, compute_cpi_dates, compute_pce_dates,
+    load_megacap_earnings, build_megacap_earnings_flags,
+)

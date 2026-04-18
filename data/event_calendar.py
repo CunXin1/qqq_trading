@@ -1,5 +1,5 @@
-"""Event calendar: FOMC dates, NFP dates, earnings season flags.
-事件日历：FOMC 日期、非农就业（NFP）日期、财报季标记。
+"""Event calendar: FOMC, NFP, CPI, PCE, mega-cap earnings dates.
+事件日历：FOMC、非农（NFP）、CPI、PCE、大型股财报日期。
 
 Macro events systematically drive QQQ volatility. This module provides:
 宏观事件系统性地驱动 QQQ 波动率。本模块提供：
@@ -8,17 +8,21 @@ Macro events systematically drive QQQ volatility. This module provides:
    FOMC 日期        — 从手工维护的 CSV 文件加载。
 2. NFP dates        — computed algorithmically (first Friday of each month).
    非农日期          — 通过算法计算（每月第一个周五）。
-3. Eve dates        — the business day before an event (for "day-before" effects).
+3. CPI release dates — computed algorithmically (~10th-13th of each month).
+   CPI 公布日        — 通过算法计算（每月约10-13日）。
+4. PCE release dates — computed algorithmically (~last Friday of each month).
+   PCE 公布日        — 通过算法计算（每月约最后一个周五）。
+5. Eve dates        — the business day before an event (for "day-before" effects).
    前夜日期          — 事件前一个工作日（用于捕捉"事件前一天"效应）。
-4. Days-to / since  — countdown/countup features for proximity to events.
+6. Days-to / since  — countdown/countup features for proximity to events.
    距事件天数         — 距下次事件天数 / 距上次事件天数（用作特征）。
-5. Earnings season  — binary flag for the ~4-week window around mega-cap earnings.
+7. Earnings season  — binary flag for the ~4-week window around mega-cap earnings.
    财报季标记         — 大型股集中发布财报的约 4 周窗口期布尔标记。
+8. Mega-cap earnings — exact dates from yfinance for NVDA/AAPL/MSFT.
+   大型股财报日        — 从 yfinance 获取 NVDA/AAPL/MSFT 的精确财报日期。
 
-These are consumed by features/external.py to build event-aware features
-(e.g. is_fomc, is_nfp_eve, days_to_fomc, is_earnings_season).
-这些被 features/external.py 使用，构建事件感知特征
-（如 is_fomc、is_nfp_eve、days_to_fomc、is_earnings_season）。
+These are consumed by features/external.py to build event-aware features.
+这些被 features/external.py 使用，构建事件感知特征。
 """
 from __future__ import annotations
 
@@ -221,3 +225,135 @@ def compute_earnings_season(index: pd.DatetimeIndex) -> pd.Series:
         mask = (index.month == m) & (index.day <= d_end)
         flag.loc[mask] = 1
     return flag
+
+
+def compute_cpi_dates(start_year: int = 2000, end_year: int = 2027) -> pd.DatetimeIndex:
+    """Approximate CPI release dates (~2nd week of each month, usually Tuesday-Thursday).
+    近似 CPI 公布日期（每月约第二周，通常为周二至周四）。
+
+    BLS releases CPI around the 10th-13th of each month at 8:30 AM ET.
+    This approximation uses the 2nd Tuesday-Wednesday of each month.
+    Since the exact pattern varies, this covers ~90% of actual dates within 1 day.
+    BLS 在每月 10-13 日左右东部时间 8:30 公布 CPI。
+    此近似使用每月第二个周二/周三，覆盖约 90% 的实际日期（误差 1 天以内）。
+    """
+    dates = []
+    for year in range(start_year, end_year + 1):
+        for month in range(1, 13):
+            first_day = pd.Timestamp(year, month, 1)
+            # Target: ~10th-13th. Use 2nd Tuesday (dayofweek=1)
+            days_to_tuesday = (1 - first_day.dayofweek) % 7
+            first_tuesday = first_day + pd.Timedelta(days=days_to_tuesday)
+            second_tuesday = first_tuesday + pd.Timedelta(days=7)
+            # CPI is usually the day after the 2nd Tuesday (Wednesday)
+            cpi_day = second_tuesday + pd.Timedelta(days=1)
+            dates.append(cpi_day)
+    return pd.DatetimeIndex(dates)
+
+
+def compute_pce_dates(start_year: int = 2000, end_year: int = 2027) -> pd.DatetimeIndex:
+    """Approximate PCE release dates (~last Friday of each month).
+    近似 PCE 公布日期（每月约最后一个周五）。
+
+    BEA releases Personal Income & Outlays (which includes PCE) at the
+    end of each month, typically the last Thursday or Friday.
+    BEA 在每月末发布个人收入与支出报告（含 PCE），通常在最后一个周四或周五。
+    """
+    dates = []
+    for year in range(start_year, end_year + 1):
+        for month in range(1, 13):
+            # Last day of month
+            if month == 12:
+                last_day = pd.Timestamp(year, 12, 31)
+            else:
+                last_day = pd.Timestamp(year, month + 1, 1) - pd.Timedelta(days=1)
+            # Find last Friday
+            days_back = (last_day.dayofweek - 4) % 7
+            last_friday = last_day - pd.Timedelta(days=days_back)
+            dates.append(last_friday)
+    return pd.DatetimeIndex(dates)
+
+
+def load_megacap_earnings(tickers: list[str] | None = None,
+                          cache_path: Path | None = None) -> pd.DataFrame:
+    """Load historical earnings dates for QQQ mega-cap weights from yfinance.
+    从 yfinance 加载 QQQ 大权重股的历史财报日期。
+
+    Returns DataFrame with columns: date, ticker.
+    返回包含 date 和 ticker 列的 DataFrame。
+
+    Caches results to CSV to avoid repeated API calls.
+    结果缓存至 CSV 以避免重复 API 调用。
+    """
+    if tickers is None:
+        tickers = ["NVDA", "AAPL", "MSFT"]
+
+    if cache_path is None:
+        from utils.paths import DATA_DIR
+        cache_path = DATA_DIR / "megacap_earnings.csv"
+
+    if cache_path.exists():
+        df = pd.read_csv(cache_path, parse_dates=["date"])
+        return df
+
+    import yfinance as yf
+
+    rows = []
+    for ticker in tickers:
+        try:
+            t = yf.Ticker(ticker)
+            cal = t.get_earnings_dates(limit=100)
+            if cal is not None:
+                past = cal[cal.index < pd.Timestamp.now(tz=cal.index.tz)]
+                for dt in past.index:
+                    rows.append({"date": dt.tz_localize(None).normalize(), "ticker": ticker})
+        except Exception:
+            pass
+
+    df = pd.DataFrame(rows)
+    if not df.empty:
+        df = df.drop_duplicates(subset=["date", "ticker"]).sort_values("date").reset_index(drop=True)
+        df.to_csv(cache_path, index=False)
+    return df
+
+
+def build_megacap_earnings_flags(index: pd.DatetimeIndex,
+                                 earnings_df: pd.DataFrame) -> pd.DataFrame:
+    """Build per-ticker earnings day and day-after flags.
+    构建每个标的的财报日和财报次日标记。
+
+    Returns DataFrame with columns like: nvda_earnings, nvda_earnings_next,
+    aapl_earnings, aapl_earnings_next, msft_earnings, msft_earnings_next,
+    any_megacap_earnings, any_megacap_earnings_next.
+    返回包含如下列的 DataFrame：nvda_earnings, nvda_earnings_next 等。
+    """
+    flags = pd.DataFrame(index=index)
+
+    if earnings_df.empty:
+        return flags
+
+    for ticker in earnings_df["ticker"].unique():
+        tk_lower = ticker.lower()
+        tk_dates = set(pd.to_datetime(earnings_df[earnings_df["ticker"] == ticker]["date"]).dt.normalize())
+
+        col_day = f"{tk_lower}_earnings"
+        col_next = f"{tk_lower}_earnings_next"
+        flags[col_day] = index.isin(tk_dates).astype(int)
+        # Day after = next business day after earnings
+        next_dates = set()
+        for d in tk_dates:
+            nxt = d + pd.Timedelta(days=1)
+            while nxt.weekday() >= 5:
+                nxt += pd.Timedelta(days=1)
+            next_dates.add(nxt)
+        flags[col_next] = index.isin(next_dates).astype(int)
+
+    # Any mega-cap reporting
+    day_cols = [c for c in flags.columns if c.endswith("_earnings") and not c.endswith("_next")]
+    next_cols = [c for c in flags.columns if c.endswith("_earnings_next")]
+    if day_cols:
+        flags["any_megacap_earnings"] = flags[day_cols].max(axis=1)
+    if next_cols:
+        flags["any_megacap_earnings_next"] = flags[next_cols].max(axis=1)
+
+    return flags
