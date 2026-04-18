@@ -67,8 +67,8 @@ def run_prediction(args):
 
     # Select model
     model_map = {
-        "interaction": MODEL_DIR / "range_0dte_2pct_2000_2022.joblib",
-        "base": MODEL_DIR / "range_0dte_2pct_2000_2022.joblib",
+        "interaction": MODEL_DIR / "range_0dte_2pct_2007_2022.joblib",
+        "base": MODEL_DIR / "range_0dte_2pct_2007_2022.joblib",
     }
     model_path = model_map[args.model]
     if not model_path.exists():

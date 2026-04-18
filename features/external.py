@@ -255,8 +255,7 @@ def engineer_event_features(df: pd.DataFrame) -> pd.DataFrame:
         earnings_df = load_megacap_earnings()
         if not earnings_df.empty:
             mc_flags = build_megacap_earnings_flags(df.index, earnings_df)
-            for col in mc_flags.columns:
-                df[col] = mc_flags[col]
+            df = pd.concat([df, mc_flags], axis=1)
     except Exception:
         pass  # graceful fallback if yfinance unavailable
 

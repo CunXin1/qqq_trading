@@ -236,7 +236,7 @@ def main():
     df = load_and_build_features()
 
     print("Loading model...")
-    model, feature_cols = load_model(MODEL_DIR / "range_0dte_2pct_2000_2022.joblib")
+    model, feature_cols = load_model(MODEL_DIR / "range_0dte_2pct_2007_2022.joblib")
     print(f"  Model: {type(model).__name__}, Features: {len(feature_cols)}")
 
     signals = build_signal_table(df, model, feature_cols, args.test_start)

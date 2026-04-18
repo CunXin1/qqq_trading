@@ -7,8 +7,10 @@
     <!-- Signal Card -->
     <div class="card card-shadow">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-            <span style="font-size:0.875rem; color:var(--text-secondary);">0DTE Range > 2% Probability</span>
-            <span style="font-size:0.75rem; color:var(--text-muted);">Data: {{ data_date }}</span>
+            <span style="font-size:0.875rem; color:var(--text-secondary);">
+                <strong style="color:var(--text);">{{ predict_date }}</strong> 日内波动 > 2% 概率
+            </span>
+            <span style="font-size:0.75rem; color:var(--text-muted);">基于 {{ data_date }} 收盘数据</span>
         </div>
         <div style="display:flex; align-items:flex-end; gap:16px; margin-bottom:20px;">
             <span style="font-size:3.5rem; font-weight:700; line-height:1;

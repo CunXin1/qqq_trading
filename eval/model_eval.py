@@ -84,9 +84,9 @@ def main():
         ext.index = pd.to_datetime(ext.index)
         df = engineer_all_external(df, ext)
         df = build_interaction_features(df)
-        model_path = MODEL_DIR / "range_0dte_2pct_2000_2022.joblib"
+        model_path = MODEL_DIR / "range_0dte_2pct_2007_2022.joblib"
     else:
-        model_path = MODEL_DIR / "range_0dte_2pct_2000_2022.joblib"
+        model_path = MODEL_DIR / "range_0dte_2pct_2007_2022.joblib"
 
     # ── Load model / 加载模型 ──
     print(f"Loading model: {model_path.name}")

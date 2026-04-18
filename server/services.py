@@ -65,7 +65,7 @@ def _load_model():
     _check_cache()
     if _cache["model"] is None:
         from models.training import load_model
-        model, feat_cols = load_model(MODEL_DIR / "range_0dte_2pct_2000_2022.joblib")
+        model, feat_cols = load_model(MODEL_DIR / "range_0dte_2pct_2007_2022.joblib")
         _cache["model"] = model
         _cache["feature_cols"] = feat_cols
     return _cache["model"], _cache["feature_cols"]
@@ -110,9 +110,16 @@ def _predict_latest():
     else:
         signal = "LOW"
 
+    # Compute next trading day (skip weekends)
+    data_date = latest.name.date()
+    next_day = data_date + timedelta(days=1)
+    while next_day.weekday() >= 5:  # skip Saturday(5) / Sunday(6)
+        next_day += timedelta(days=1)
+
     # Context
     ctx = {
-        "data_date": str(latest.name.date()),
+        "data_date": str(data_date),
+        "predict_date": str(next_day),
         "prob": prob,
         "signal": signal,
         "close": float(latest.get("reg_close", 0)),
@@ -319,7 +326,7 @@ def get_model_info():
     info = {
         "model_type": type(model).__name__,
         "n_features": len(feature_cols) if feature_cols else 0,
-        "model_file": "range_0dte_2pct_2000_2022.joblib",
+        "model_file": "range_0dte_2pct_2007_2022.joblib",
         "features": feature_cols[:20] if feature_cols else [],  # show first 20
         "features_total": len(feature_cols) if feature_cols else 0,
     }

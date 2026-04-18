@@ -65,20 +65,20 @@ TASKS = {
         "col":           "intraday_range",        # (H-L)/O — straddle target / 跨式期权目标
         "shift":          0,                       # 0DTE: same-day / 当天
         "name":          "0DTE Range (H-L)/O",
-        "default_model": "range_0dte_2pct_2000_2022",
+        "default_model": "range_0dte_2pct_2007_2022",
     },
     "otc_0dte": {
         "col":           "abs_open_to_close",     # |O2C| — directional move / 方向性波动
         "shift":          0,                       # 0DTE: same-day / 当天
         "name":          "0DTE |O2C|",
-        "default_model": "otc_0dte_2pct_2000_2022",
+        "default_model": "otc_0dte_2pct_2007_2022",
     },
     "c2c_1dte": {
         "col":           "abs_close_to_close",    # |C2C| — overnight + intraday / 隔夜+日内
         "shift":         -1,                       # 1DTE: predict today → measure tomorrow
                                                    # 今天预测 → 明天衡量
         "name":          "1DTE next-day |C2C|",
-        "default_model": "c2c_1dte_2pct_2000_2022",
+        "default_model": "c2c_1dte_2pct_2007_2022",
     },
 }
 

@@ -286,7 +286,8 @@ def load_megacap_earnings(tickers: list[str] | None = None,
     结果缓存至 CSV 以避免重复 API 调用。
     """
     if tickers is None:
-        tickers = ["NVDA", "AAPL", "MSFT"]
+        tickers = ["AAPL", "MSFT", "NVDA", "AMZN", "GOOG",
+                   "META", "TSLA", "BRK-B", "AVGO", "JPM"]
 
     if cache_path is None:
         from utils.paths import DATA_DIR
@@ -304,9 +305,15 @@ def load_megacap_earnings(tickers: list[str] | None = None,
             t = yf.Ticker(ticker)
             cal = t.get_earnings_dates(limit=100)
             if cal is not None:
-                past = cal[cal.index < pd.Timestamp.now(tz=cal.index.tz)]
-                for dt in past.index:
-                    rows.append({"date": dt.tz_localize(None).normalize(), "ticker": ticker})
+                for dt in cal.index:
+                    hour = dt.hour if hasattr(dt, 'hour') else 16
+                    # BMO (before market open): hour < 12; AMC (after market close): hour >= 12
+                    timing = "BMO" if hour < 12 else "AMC"
+                    rows.append({
+                        "date": dt.tz_localize(None).normalize(),
+                        "ticker": ticker,
+                        "timing": timing,
+                    })
         except Exception:
             pass
 
@@ -319,41 +326,63 @@ def load_megacap_earnings(tickers: list[str] | None = None,
 
 def build_megacap_earnings_flags(index: pd.DatetimeIndex,
                                  earnings_df: pd.DataFrame) -> pd.DataFrame:
-    """Build per-ticker earnings day and day-after flags.
-    构建每个标的的财报日和财报次日标记。
+    """Build per-ticker earnings impact day flags, respecting AMC/BMO timing.
+    构建每个标的的财报波动日标记，区分盘后(AMC)和盘前(BMO)发布。
 
-    Returns DataFrame with columns like: nvda_earnings, nvda_earnings_next,
-    aapl_earnings, aapl_earnings_next, msft_earnings, msft_earnings_next,
-    any_megacap_earnings, any_megacap_earnings_next.
-    返回包含如下列的 DataFrame：nvda_earnings, nvda_earnings_next 等。
+    AMC (after market close, e.g. AAPL/NVDA): impact = NEXT trading day.
+    BMO (before market open, e.g. JPM/BRK-B): impact = SAME day.
+    AMC（盘后发布，如 AAPL/NVDA）：波动日 = 次日。
+    BMO（盘前发布，如 JPM/BRK-B）：波动日 = 当日。
+
+    Returns DataFrame with columns:
+      {ticker}_earnings       — earnings release day (for reference)
+      {ticker}_impact         — actual volatility impact day (AMC→next, BMO→same)
+      any_megacap_earnings    — any company releasing
+      any_megacap_impact      — any company's impact day
     """
     flags = pd.DataFrame(index=index)
 
     if earnings_df.empty:
         return flags
 
+    has_timing = "timing" in earnings_df.columns
+
+    all_impact_dates = set()
+
     for ticker in earnings_df["ticker"].unique():
-        tk_lower = ticker.lower()
-        tk_dates = set(pd.to_datetime(earnings_df[earnings_df["ticker"] == ticker]["date"]).dt.normalize())
+        tk_lower = ticker.lower().replace("-", "")  # BRK-B → brkb
+        tk_data = earnings_df[earnings_df["ticker"] == ticker]
+        tk_dates = set(pd.to_datetime(tk_data["date"]).dt.normalize())
 
         col_day = f"{tk_lower}_earnings"
-        col_next = f"{tk_lower}_earnings_next"
+        col_impact = f"{tk_lower}_impact"
         flags[col_day] = index.isin(tk_dates).astype(int)
-        # Day after = next business day after earnings
-        next_dates = set()
-        for d in tk_dates:
-            nxt = d + pd.Timedelta(days=1)
-            while nxt.weekday() >= 5:
-                nxt += pd.Timedelta(days=1)
-            next_dates.add(nxt)
-        flags[col_next] = index.isin(next_dates).astype(int)
 
-    # Any mega-cap reporting
-    day_cols = [c for c in flags.columns if c.endswith("_earnings") and not c.endswith("_next")]
-    next_cols = [c for c in flags.columns if c.endswith("_earnings_next")]
+        # Compute impact dates based on timing
+        impact_dates = set()
+        for _, row in tk_data.iterrows():
+            d = pd.Timestamp(row["date"]).normalize()
+            timing = row.get("timing", "AMC") if has_timing else "AMC"
+            if timing == "BMO":
+                # Before market open → impact is same day
+                impact_dates.add(d)
+            else:
+                # After market close → impact is next business day
+                nxt = d + pd.Timedelta(days=1)
+                while nxt.weekday() >= 5:
+                    nxt += pd.Timedelta(days=1)
+                impact_dates.add(nxt)
+            all_impact_dates.add(d)  # release day for any_megacap_earnings
+
+        flags[col_impact] = index.isin(impact_dates).astype(int)
+        all_impact_dates.update(impact_dates)
+
+    # Any mega-cap flags
+    day_cols = [c for c in flags.columns if c.endswith("_earnings")]
+    impact_cols = [c for c in flags.columns if c.endswith("_impact")]
     if day_cols:
         flags["any_megacap_earnings"] = flags[day_cols].max(axis=1)
-    if next_cols:
-        flags["any_megacap_earnings_next"] = flags[next_cols].max(axis=1)
+    if impact_cols:
+        flags["any_megacap_impact"] = flags[impact_cols].max(axis=1)
 
     return flags

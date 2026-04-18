@@ -61,19 +61,27 @@ def build_interaction_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # ── A. VRP regime buckets (4 flags) ──
     # VRP 状态分桶（4 个标记）
-    # Classify VRP into discrete regimes for cross features.
-    # 将 VRP 分类为离散状态用于交叉特征。
+    # Use expanding quantile: at each time t, only look at data up to t.
+    # 使用 expanding quantile：每个时间点 t 只看 t 之前的数据，防止未来泄露。
+    # min_periods=252 ensures at least 1 year of history before computing quantiles.
+    # min_periods=252 确保至少积累 1 年数据后才计算分位数。
     vrp = out["vrp_20d"]
-    out["vrp_high"] = (vrp > vrp.quantile(0.75)).astype(int)       # Top 25% / 前 25%
-    out["vrp_extreme"] = (vrp > vrp.quantile(0.90)).astype(int)    # Top 10% / 前 10%
+    vrp_q75 = vrp.expanding(min_periods=252).quantile(0.75)
+    vrp_q90 = vrp.expanding(min_periods=252).quantile(0.90)
+    out["vrp_high"] = (vrp > vrp_q75).astype(int)                 # Top 25% (expanding) / 前 25%（动态）
+    out["vrp_extreme"] = (vrp > vrp_q90).astype(int)              # Top 10% (expanding) / 前 10%（动态）
     out["vrp_positive"] = (vrp > 0).astype(int)                    # IV > RV (fear premium) / IV > RV（恐慌溢价）
     out["vrp_negative"] = (vrp < -0.05).astype(int)                # IV << RV (complacent) / IV << RV（自满）
 
     # ── A. Vol regime (2 flags) ──
     # 波动率状态（2 个标记）
+    # Same fix: expanding quantile to avoid lookahead bias.
+    # 同样修复：用 expanding quantile 防止未来泄露。
     rv20 = out["realized_vol_20d"]
-    out["high_vol_regime"] = (rv20 > rv20.quantile(0.75)).astype(int)  # High RV / 高已实现波动率
-    out["low_vol_regime"] = (rv20 < rv20.quantile(0.25)).astype(int)   # Low RV / 低已实现波动率
+    rv20_q75 = rv20.expanding(min_periods=252).quantile(0.75)
+    rv20_q25 = rv20.expanding(min_periods=252).quantile(0.25)
+    out["high_vol_regime"] = (rv20 > rv20_q75).astype(int)         # High RV (expanding) / 高已实现波动率（动态）
+    out["low_vol_regime"] = (rv20 < rv20_q25).astype(int)          # Low RV (expanding) / 低已实现波动率（动态）
 
     # ── B. Catalyst proximity flags (7 flags) ──
     # 催化事件接近度标记（7 个）

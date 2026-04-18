@@ -39,12 +39,12 @@ def parse_args(argv=None):
         help="Hyperparameter preset (default: production)"
     )
     parser.add_argument(
-        "--train-end", type=str, default="2024-12-31",
-        help="Training data cutoff date (default: 2024-12-31)"
+        "--train-end", type=str, default="2022-12-31",
+        help="Training data cutoff date (default: 2022-12-31)"
     )
     parser.add_argument(
-        "--val-years", type=int, default=2,
-        help="Number of years at end of training for validation / early stopping (default: 2)"
+        "--val-end", type=str, default="2023-12-31",
+        help="Validation data cutoff date (default: 2023-12-31). Test starts after this."
     )
     parser.add_argument(
         "--refresh-external", action="store_true",
@@ -122,15 +122,14 @@ def main(argv=None):
 
     valid = df[available + [target_col]].dropna()
 
-    # Determine first year of data
+    # Split: train → val → test
     train_end = pd.Timestamp(args.train_end)
+    val_end = pd.Timestamp(args.val_end)
     train_start_year = valid.index[0].year
 
-    # Split: train = [start, train_end - val_years], val = [train_end - val_years, train_end], test = [train_end+1, end]
-    val_start = pd.Timestamp(f"{train_end.year - args.val_years + 1}-01-01")
-    train = valid.loc[:str(val_start - pd.Timedelta(days=1))]
-    val = valid.loc[str(val_start):str(train_end)]
-    test = valid.loc[str(train_end + pd.Timedelta(days=1)):]
+    train = valid.loc[:str(train_end)]
+    val = valid.loc[str(train_end + pd.Timedelta(days=1)):str(val_end)]
+    test = valid.loc[str(val_end + pd.Timedelta(days=1)):]
 
     X_train = train[available].values
     y_train = train[target_col].values.astype(int)
