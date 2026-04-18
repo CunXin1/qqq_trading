@@ -60,6 +60,21 @@ def create_app() -> FastAPI:
         data = services.get_model_info()
         return templates.TemplateResponse("model_info.html", {"request": request, **data})
 
+    @app.get("/eval")
+    async def eval_report(request: Request, task: str = "range_0dte",
+                          threshold: float = 0.5, start: str = "2023-01-01",
+                          thresh: float = 0.02, miss_thresh: float = 3.0):
+        data = services.get_eval_report(
+            task=task, start=start, thresh=thresh,
+            threshold=threshold, miss_thresh=miss_thresh,
+        )
+        return templates.TemplateResponse("eval.html", {"request": request, **data})
+
+    @app.get("/eval/cross")
+    async def cross_eval(request: Request):
+        data = services.get_cross_eval()
+        return templates.TemplateResponse("eval_cross.html", {"request": request, **data})
+
     @app.post("/actions/fetch")
     async def action_fetch(background_tasks: BackgroundTasks):
         background_tasks.add_task(services.trigger_fetch)

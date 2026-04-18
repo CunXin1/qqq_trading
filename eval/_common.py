@@ -399,3 +399,200 @@ def run_report(task: str, model: str | None = None,
     print_monthly(alerts); print()
     print_missed(sig, threshold, miss_thresh); print()
     print_false_alarms(alerts, thresh * 100)
+
+
+# ── Structured data API for web UI / 面向 Web UI 的结构化数据 API ──
+
+def _clean_float(v) -> float | None:
+    """Replace NaN/Inf with None for JSON/template compatibility.
+    将 NaN/Inf 替换为 None 以兼容 JSON 和模板。"""
+    if v is None:
+        return None
+    try:
+        if np.isnan(v) or np.isinf(v):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return float(v)
+
+
+def _row_to_dict(row, date) -> dict:
+    """Convert a DataFrame row to a clean dict for templates.
+    将 DataFrame 行转换为模板友好的字典。"""
+    return {
+        "date": str(date.date()),
+        "prob": _clean_float(row["prob"]),
+        "actual_pct": _clean_float(row["actual_pct"]),
+        "range_pct": _clean_float(row.get("range_pct")),
+        "c2c_pct": _clean_float(row.get("c2c_pct")),
+        "o2c_pct": _clean_float(row.get("o2c_pct")),
+        "gap_pct": _clean_float(row.get("gap_pct")),
+        "max_dd": _clean_float(row.get("max_dd")),
+        "max_ru": _clean_float(row.get("max_ru")),
+        "rv20": _clean_float(row.get("rv20")),
+        "vrp_20d": _clean_float(row.get("vrp_20d")),
+        "events": format_events(row),
+        "hit": bool(row["hit"]),
+    }
+
+
+def get_report_data(task: str, model: str | None = None,
+                    start: str = "2023-01-01", end: str | None = None,
+                    thresh: float = 0.02, threshold: float = 0.5,
+                    miss_thresh: float = 3.0) -> dict:
+    """Return structured evaluation data for web display.
+    返回结构化评估数据，用于网页展示。
+
+    Reuses the same core functions (load_features, build_eval_table,
+    _summary_metrics) used by the CLI eval scripts, but returns
+    dicts/lists instead of printing text.
+    复用 CLI 评估脚本使用的核心函数，但返回字典/列表而非打印文本。
+
+    Returns dict with keys: summary, alerts, monthly, missed, false_alarms.
+    返回字典，键为：summary, alerts, monthly, missed, false_alarms。
+    """
+    if task not in TASKS:
+        raise ValueError(f"Unknown task '{task}'. Choose from {list(TASKS)}")
+    if model is None:
+        model = TASKS[task]["default_model"]
+
+    df = load_features()
+    sig, model_file = build_eval_table(df, task, model, start, end, thresh)
+    alerts_df = sig[sig["prob"] >= threshold]
+
+    # Summary metrics
+    tc = TASKS[task]
+    m = _summary_metrics(sig, threshold)
+    summary = {
+        "task": task,
+        "task_name": tc["name"],
+        "model_file": model_file,
+        "match": "task-matched" if model_file.startswith(tc["default_model"]) else "CROSS-TASK",
+        "date_start": str(sig.index.min().date()),
+        "date_end": str(sig.index.max().date()),
+        "threshold": threshold,
+        "thresh": thresh,
+        "miss_thresh": miss_thresh,
+        "n": m["n"],
+        "base_rate": m["base_rate"],
+        "alerts": m["alerts"],
+        "tp": m["tp"], "fp": m["fp"], "fn": m["fn"], "tn": m["tn"],
+        "precision": m["precision"],
+        "recall": m["recall"],
+        "auc": _clean_float(m["auc"]),
+        "ap": _clean_float(m["ap"]),
+        "lift": _clean_float(m["precision"] / max(m["base_rate"], 1e-9)),
+    }
+
+    # Alerts
+    alerts_list = [_row_to_dict(r, d) for d, r in alerts_df.iterrows()]
+
+    # Monthly summary
+    if not alerts_df.empty:
+        a = alerts_df.copy()
+        a["month"] = a.index.to_period("M")
+        mg = a.groupby("month").agg(
+            signals=("prob", "count"),
+            hits=("hit", "sum"),
+            avg_prob=("prob", "mean"),
+            avg_actual=("actual_pct", "mean"),
+            max_actual=("actual_pct", "max"),
+        ).reset_index()
+        mg["hit_rate"] = mg["hits"] / mg["signals"]
+        monthly_list = [
+            {
+                "month": str(r["month"]),
+                "signals": int(r["signals"]),
+                "hits": int(r["hits"]),
+                "hit_rate": float(r["hit_rate"]),
+                "avg_prob": float(r["avg_prob"]),
+                "avg_actual": float(r["avg_actual"]),
+                "max_actual": float(r["max_actual"]),
+            }
+            for _, r in mg.iterrows()
+        ]
+    else:
+        monthly_list = []
+
+    # Missed moves (false negatives for big moves)
+    missed_df = sig[(sig["prob"] < threshold) & (sig["actual_pct"] > miss_thresh)]
+    missed_list = [
+        {
+            "date": str(d.date()),
+            "prob": _clean_float(r["prob"]),
+            "actual_pct": _clean_float(r["actual_pct"]),
+            "c2c_pct": _clean_float(r.get("c2c_pct")),
+            "rv20": _clean_float(r.get("rv20")),
+            "events": format_events(r),
+        }
+        for d, r in missed_df.iterrows()
+    ]
+
+    # False alarms (false positives)
+    fp_df = alerts_df[alerts_df["actual_pct"] <= thresh * 100]
+    false_alarms_list = [_row_to_dict(r, d) for d, r in fp_df.iterrows()]
+
+    # Ground truth: all days with actual values, signaled or not
+    ground_truth_list = []
+    for d, r in sig.iterrows():
+        row = _row_to_dict(r, d)
+        row["signaled"] = bool(r["prob"] >= threshold)
+        if row["signaled"] and row["hit"]:
+            row["result"] = "TP"
+        elif row["signaled"] and not row["hit"]:
+            row["result"] = "FP"
+        elif not row["signaled"] and row["hit"]:
+            row["result"] = "FN"
+        else:
+            row["result"] = "TN"
+        ground_truth_list.append(row)
+
+    return {
+        "summary": summary,
+        "alerts": alerts_list,
+        "monthly": monthly_list,
+        "missed": missed_list,
+        "false_alarms": false_alarms_list,
+        "ground_truth": ground_truth_list,
+    }
+
+
+def get_cross_eval_matrix(start: str = "2023-01-01", end: str | None = None,
+                          thresh: float = 0.02) -> dict:
+    """Compute AUC for all model x task combinations (3x3 matrix).
+    计算所有模型×任务组合的 AUC（3×3 矩阵）。
+
+    Returns a dict with task names and the AUC matrix, showing that
+    task-matched models outperform cross-task models.
+    返回包含任务名称和 AUC 矩阵的字典，展示任务匹配模型优于跨任务模型。
+    """
+    df = load_features()
+    task_keys = list(TASKS.keys())
+    matrix = {}
+
+    for model_task in task_keys:
+        model_name = TASKS[model_task]["default_model"]
+        try:
+            resolve_model_path(model_name)
+        except FileNotFoundError:
+            continue
+
+        row = {}
+        for eval_task in task_keys:
+            try:
+                sig, _ = build_eval_table(df, eval_task, model_name, start, end, thresh)
+                y_true = sig["hit"].astype(int)
+                y_prob = sig["prob"]
+                auc = roc_auc_score(y_true, y_prob) if y_true.nunique() == 2 else None
+                row[eval_task] = _clean_float(auc)
+            except Exception:
+                row[eval_task] = None
+
+        matrix[model_task] = row
+
+    return {
+        "task_keys": task_keys,
+        "task_names": {t: TASKS[t]["name"] for t in task_keys},
+        "model_names": {t: TASKS[t]["default_model"] for t in task_keys},
+        "matrix": matrix,
+    }

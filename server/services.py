@@ -354,6 +354,55 @@ def get_model_info():
     return info
 
 
+_eval_cache: dict = {"data": None, "params": None, "dm_mtime": 0.0}
+
+
+def get_eval_report(task: str = "range_0dte", model: str | None = None,
+                    start: str = "2023-01-01", end: str | None = None,
+                    thresh: float = 0.02, threshold: float = 0.5,
+                    miss_thresh: float = 3.0) -> dict:
+    """Evaluation report with file-mtime caching.
+    带文件修改时间缓存的评估报告。"""
+    from eval._common import get_report_data, TASKS
+
+    params = (task, model, start, end, thresh, threshold, miss_thresh)
+    dm_path = OUTPUT_DIR / "daily_metrics.parquet"
+    mtime = dm_path.stat().st_mtime if dm_path.exists() else 0
+
+    if (_eval_cache["params"] == params and
+            _eval_cache["dm_mtime"] == mtime and
+            _eval_cache["data"] is not None):
+        data = _eval_cache["data"]
+    else:
+        data = get_report_data(task, model, start, end, thresh, threshold, miss_thresh)
+        _eval_cache.update(data=data, params=params, dm_mtime=mtime)
+
+    # Attach available tasks for the filter form
+    data["available_tasks"] = [
+        {"key": k, "name": v["name"]} for k, v in TASKS.items()
+    ]
+    return data
+
+
+_cross_cache: dict = {"data": None, "dm_mtime": 0.0}
+
+
+def get_cross_eval() -> dict:
+    """Cross-evaluation matrix with caching.
+    带缓存的交叉评估矩阵。"""
+    from eval._common import get_cross_eval_matrix
+
+    dm_path = OUTPUT_DIR / "daily_metrics.parquet"
+    mtime = dm_path.stat().st_mtime if dm_path.exists() else 0
+
+    if _cross_cache["dm_mtime"] == mtime and _cross_cache["data"] is not None:
+        return _cross_cache["data"]
+
+    data = get_cross_eval_matrix()
+    _cross_cache.update(data=data, dm_mtime=mtime)
+    return data
+
+
 def trigger_fetch():
     """Background task: fetch + merge data."""
     global _task_status
