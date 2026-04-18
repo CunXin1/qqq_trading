@@ -1,4 +1,29 @@
-"""Service layer: thin wrappers around existing modules with caching."""
+"""
+Service layer: thin wrappers around features/models/eval with caching.
+服务层：对特征/模型/评估模块的轻量封装，带缓存机制。
+
+Uses file-mtime-based cache invalidation — when daily_metrics.parquet is
+updated on disk, all cached model predictions and feature DataFrames are
+automatically reloaded on the next request.
+采用基于文件修改时间的缓存失效策略 — 当 daily_metrics.parquet 文件更新时，
+所有缓存的模型预测和特征 DataFrame 将在下次请求时自动重新加载。
+
+Key public functions / 主要公开函数:
+    get_dashboard()      — Current signal + recent 10 alert days for the main page.
+                           当前信号 + 最近 10 个告警日，用于主页面。
+    get_signal_detail()  — Full prediction context (probability, price, vol, events).
+                           完整预测上下文（概率、价格、波动率、事件）。
+    get_history()        — Signal history with TP/FP/FN/TN classification.
+                           信号历史，包含 TP/FP/FN/TN 分类。
+    get_data_status()    — Freshness check for all data files (fresh/ok/stale/missing).
+                           所有数据文件的新鲜度检查（fresh/ok/stale/missing）。
+    get_model_info()     — Model metadata + cached AUC/AP/Brier evaluation metrics.
+                           模型元数据 + 缓存的 AUC/AP/Brier 评估指标。
+    trigger_fetch()      — Background task: fetch new data and invalidate cache.
+                           后台任务：抓取新数据并使缓存失效。
+    trigger_predict()    — Background task: force re-prediction with fresh data.
+                           后台任务：使用最新数据强制重新预测。
+"""
 from __future__ import annotations
 
 import time

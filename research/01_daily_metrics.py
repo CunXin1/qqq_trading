@@ -1,8 +1,22 @@
 """
-Phase 1: Build daily metrics from 1-min QQQ data.
+Phase 1 (research): Build daily metrics from 1-min QQQ data.
+第一阶段（研究）：从 QQQ 1 分钟数据构建每日指标。
 
-Thin wrapper around data.daily_metrics — computes returns,
-ranges, pre-market signals, volume metrics, and large-move flags.
+Reads the full 1-minute OHLCV parquet file and computes daily aggregated
+metrics, then prints comprehensive summary statistics covering:
+读取完整的 1 分钟 OHLCV parquet 文件，计算每日聚合指标，并输出全面的汇总统计：
+
+  - Return statistics (close-to-close, open-to-close, intraday range, gap).
+    收益率统计（收盘到收盘、开盘到收盘、日内振幅、跳空缺口）。
+  - Large-move day counts & percentages at 1%/2%/3%/5% thresholds.
+    大幅波动日计数和百分比（1%/2%/3%/5% 阈值）。
+  - Max drawdown / runup statistics.
+    最大回撤/最大涨幅统计。
+  - Pre-market session metrics (return and range, where available).
+    盘前交易时段指标（收益率和振幅，如有数据）。
+
+Output: daily_metrics.parquet saved to OUTPUT_DIR.
+输出：daily_metrics.parquet 保存至 OUTPUT_DIR。
 """
 import sys
 from pathlib import Path

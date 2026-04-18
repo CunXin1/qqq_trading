@@ -1,12 +1,47 @@
 """
 Fetch market data for QQQ prediction: IBKR first, yfinance fallback.
+获取 QQQ 预测所需的市场数据：IBKR 为主，yfinance 备用。
 
-Usage:
-    python -m live.fetch_data                      # auto: IBKR -> yfinance
+This is the data ingestion layer for the live trading pipeline.
+It fetches 4 types of data needed for feature engineering:
+这是实盘交易管线的数据摄入层。
+获取特征工程所需的 4 类数据：
+
+  1. QQQ OHLCV:    Daily bars (or aggregated from 1-min bars via IBKR).
+     QQQ OHLCV：   日线（或通过 IBKR 从 1 分钟 K 线聚合）。
+  2. QQQ Premarket: Pre-market range/return (4:00-9:29 session).
+     QQQ 盘前：    盘前振幅/收益率（4:00-9:29 时段）。
+  3. VIX/VVIX:     Volatility indices for VRP calculation.
+     VIX/VVIX：    波动率指数用于 VRP 计算。
+  4. Yields:       Treasury yields for rate features (always via yfinance).
+     国债收益率：   利率特征用（始终通过 yfinance）。
+
+Data source priority / 数据源优先级:
+  IBKR (preferred): Real-time 1-min bars → aggregate to daily + premarket.
+                    More accurate max_drawdown/max_runup from intraday path.
+  IBKR（首选）：    实时 1 分钟 K 线 → 聚合为日线 + 盘前。
+                    从日内路径获得更准确的最大回撤/反弹。
+  yfinance (fallback): Free, no connection needed, but daily bars only.
+                       Premarket data limited to hourly resolution.
+  yfinance（备用）：  免费，无需连接，但仅有日线。
+                      盘前数据仅有小时级分辨率。
+
+Key features / 核心功能:
+  --merge:    Append new days to historical parquets (daily_metrics + external_data).
+              This bridges training data and live data seamlessly.
+              将新日数据追加到历史 parquet（daily_metrics + external_data）。
+              无缝衔接训练数据和实时数据。
+  --validate: Run data quality checks (date alignment, field completeness).
+              运行数据质量检查（日期对齐、字段完整性）。
+  --csv:      Export to CSV for debugging or the test_data_quality script.
+              导出 CSV 用于调试或 test_data_quality 脚本。
+
+Usage / 用法:
+    python -m live.fetch_data                      # auto: IBKR -> yfinance / 自动选择
     python -m live.fetch_data --days 10
     python -m live.fetch_data --source ibkr --port 7496
     python -m live.fetch_data --source yfinance
-    python -m live.fetch_data --validate --csv
+    python -m live.fetch_data --validate --csv --merge
 """
 
 import argparse
@@ -24,7 +59,17 @@ import numpy as np
 # ═════════════════════════════════════════════
 
 class IBKRSource:
-    """Fetch data from Interactive Brokers TWS/Gateway."""
+    """Fetch data from Interactive Brokers TWS/Gateway.
+    从盈透证券 TWS/Gateway 获取数据。
+
+    Preferred source: provides 1-min bars for accurate intraday aggregation
+    (max_drawdown, max_runup, VWAP, premarket metrics).
+    首选数据源：提供 1 分钟 K 线用于精确的日内聚合
+    （最大回撤、最大反弹、VWAP、盘前指标）。
+
+    Requires IBKR TWS or Gateway running locally.
+    需要本地运行 IBKR TWS 或 Gateway。
+    """
 
     def __init__(self, host="127.0.0.1", port=7497, client_id=10):
         self.host = host
@@ -219,7 +264,14 @@ class IBKRSource:
 
 
 class YFinanceSource:
-    """Fetch data from Yahoo Finance (free, no connection needed)."""
+    """Fetch data from Yahoo Finance (free, no connection needed).
+    从 Yahoo Finance 获取数据（免费，无需连接）。
+
+    Fallback source: daily bars only (no 1-min), limited premarket
+    (hourly resolution). Max drawdown/runup not available.
+    备用数据源：仅日线（无 1 分钟），有限的盘前数据
+    （小时级分辨率）。无最大回撤/反弹数据。
+    """
 
     def __init__(self):
         self.name = "yfinance"
@@ -288,7 +340,18 @@ class YFinanceSource:
 # ═════════════════════════════════════════════
 
 def fetch_yields(days):
-    """Treasury yields — always via yfinance (simplest for yields)."""
+    """Fetch Treasury yields — always via yfinance (simplest for yields).
+    获取国债收益率——始终通过 yfinance（获取收益率最简便的方式）。
+
+    Downloads 10Y (^TNX), 3M (^IRX), 5Y (^FVX) and computes:
+    下载 10 年期、3 个月期、5 年期收益率并计算：
+      yield_curve_slope:    10Y - 3M (positive = normal, negative = inverted).
+                            10 年 - 3 个月（正 = 正常，负 = 倒挂）。
+      yield_curve_inverted: Binary flag for inverted curve.
+                            收益率曲线倒挂布尔标记。
+      yield_10y_change_1d:  Daily change in 10Y yield.
+                            10 年期收益率日变化量。
+    """
     import yfinance as yf
     start = (date.today() - timedelta(days=days + 10)).isoformat()
     end = (date.today() + timedelta(days=1)).isoformat()
@@ -319,7 +382,16 @@ def fetch_yields(days):
 
 
 def get_events(days=30):
-    """FOMC, NFP, earnings season flags."""
+    """Generate FOMC, NFP, earnings season event flags for upcoming days.
+    生成未来若干天的 FOMC、NFP、财报季事件标记。
+
+    Uses hardcoded FOMC dates (updated annually) and algorithmic NFP dates
+    (first Friday of each month). Returns a DataFrame indexed by business
+    day with columns: is_fomc_day, days_to_fomc, fomc_imminent, is_nfp_day,
+    days_to_nfp, nfp_imminent, is_earnings_season.
+    使用硬编码的 FOMC 日期（每年更新）和算法计算的 NFP 日期
+    （每月第一个周五）。返回以工作日为索引的 DataFrame。
+    """
     today = pd.Timestamp.today().normalize()
     dates = pd.bdate_range(today - timedelta(days=5), today + timedelta(days=days))
 
@@ -363,7 +435,8 @@ def get_events(days=30):
 # ═════════════════════════════════════════════
 
 def add_qqq_derived(df):
-    """Add return/range fields to QQQ OHLCV."""
+    """Add return/range fields to QQQ OHLCV (matches daily_metrics.py logic).
+    为 QQQ OHLCV 添加收益率/振幅字段（匹配 daily_metrics.py 逻辑）。"""
     df["close_to_close_ret"] = df["close"].pct_change()
     df["open_to_close_ret"] = df["close"] / df["open"] - 1
     df["intraday_range"] = (df["high"] - df["low"]) / df["open"]
@@ -372,7 +445,8 @@ def add_qqq_derived(df):
 
 
 def add_vix_derived(df):
-    """Add VIX change/range/ratio fields."""
+    """Add VIX change/range/ratio fields for feature engineering.
+    为特征工程添加 VIX 变化/振幅/比率字段。"""
     if "vix_close" in df.columns:
         df["vix_change_1d"] = df["vix_close"].pct_change()
         df["vix_range"] = (df["vix_high"] - df["vix_low"]) / df["vix_close"]
@@ -386,7 +460,14 @@ def add_vix_derived(df):
 # ═════════════════════════════════════════════
 
 def validate(qqq, premarket, vix, yields, events, source_name):
-    """Check data completeness."""
+    """Check data completeness and date alignment across all sources.
+    检查所有数据源的完整性和日期对齐。
+
+    Verifies each data source has required columns and that all sources
+    share the same latest date. Returns True if all checks pass.
+    验证每个数据源具有所需列，且所有数据源共享相同的最新日期。
+    所有检查通过返回 True。
+    """
     print(f"\n{'=' * 70}")
     print(f"DATA VALIDATION (source: {source_name})")
     print(f"{'=' * 70}")
@@ -431,7 +512,12 @@ def validate(qqq, premarket, vix, yields, events, source_name):
 # ═════════════════════════════════════════════
 
 async def fetch_from_source(source, days):
-    """Fetch all data from one source. Returns dict of DataFrames."""
+    """Fetch all data (QQQ + premarket + VIX) from one source.
+    从一个数据源获取所有数据（QQQ + 盘前 + VIX）。
+
+    Returns dict with keys: qqq, premarket, vix (each a DataFrame).
+    返回字典，键为：qqq、premarket、vix（各为 DataFrame）。
+    """
     qqq = await source.fetch_qqq(days)
     if not qqq.empty:
         qqq = add_qqq_derived(qqq)
@@ -585,7 +671,15 @@ async def run(args):
 # ═════════════════════════════════════════════
 
 def _live_qqq_to_daily_metrics(qqq, premarket):
-    """Convert live QQQ + premarket DataFrames to daily_metrics format (35 columns)."""
+    """Convert live QQQ + premarket DataFrames to daily_metrics format (~35 columns).
+    将实时 QQQ + 盘前 DataFrame 转换为 daily_metrics 格式（约 35 列）。
+
+    Reproduces the exact column schema of data/daily_metrics.py output
+    so that live rows can be appended to the historical parquet without
+    breaking downstream feature engineering.
+    复制 data/daily_metrics.py 输出的精确列架构，
+    使实时行可以追加到历史 parquet 而不破坏下游特征工程。
+    """
     df = pd.DataFrame(index=qqq.index)
     df.index.name = "date"
 
@@ -648,7 +742,23 @@ def _live_qqq_to_daily_metrics(qqq, premarket):
 
 
 def merge_with_historical(qqq, premarket, vix, yields, source_name):
-    """Merge live data into historical parquets, update in place."""
+    """Merge live data into historical parquets, update in place.
+    将实时数据合并到历史 parquet 文件中，原地更新。
+
+    Updates two parquets / 更新两个 parquet 文件:
+      1. daily_metrics.parquet:  Append new QQQ daily rows (with derived fields).
+                                 追加新的 QQQ 日线行（含衍生字段）。
+      2. external_data.parquet:  Append new VIX/VVIX/yield rows.
+                                 追加新的 VIX/VVIX/收益率行。
+
+    Handles edge cases / 处理边界情况:
+      - First live day's gap_return needs historical last close.
+        第一个实时日的跳空收益率需要历史最后收盘价。
+      - First live day's C2C return bridges historical → live.
+        第一个实时日的 C2C 收益率衔接历史 → 实时。
+      - Overlap days (already in historical) are skipped, not overwritten.
+        重叠日（已在历史中）被跳过，不覆盖。
+    """
     from utils.paths import OUTPUT_DIR
 
     print(f"\n{'=' * 70}")

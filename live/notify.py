@@ -1,24 +1,43 @@
 """
 Daily pre-market prediction + Bark push notification.
+每日盘前预测 + Bark 推送通知。
 
 Runs at 9:29 AM ET (6:29 AM PT) — right before market open,
 when pre-market data is most complete.
+在美东 9:29（太平洋 6:29）运行——开盘前，盘前数据最完整时。
 
-Flow:
-  1. Fetch latest data (IBKR -> yfinance fallback)
-  2. Merge into historical parquets
-  3. Build features + run 0DTE Range model
-  4. Push result to iPhone via Bark
+Flow / 流程:
+  1. Fetch latest data (IBKR -> yfinance fallback).
+     获取最新数据（IBKR → yfinance 备用）。
+  2. Merge into historical parquets (bridges training ↔ live).
+     合并到历史 parquet（衔接训练 ↔ 实时）。
+  3. Build full 122-feature set + run 0DTE Range model prediction.
+     构建完整 122 特征集 + 运行 0DTE Range 模型预测。
+  4. Format signal + context → push to iPhone via Bark.
+     格式化信号 + 上下文 → 通过 Bark 推送到 iPhone。
 
-Usage:
-    python -m live.notify                     # run once
-    python -m live.notify --bark-key YOUR_KEY # override key
-    python -m live.notify --dry-run            # preview without pushing
+Notification content / 通知内容:
+  - Signal level: HIGH (≥70%), ELEVATED (≥50%), MODERATE (≥30%), LOW (<30%).
+    信号级别：高 (≥70%)、升高 (≥50%)、中等 (≥30%)、低 (<30%)。
+  - Previous day's close, range, C2C, RV20, VRP.
+    前一天的收盘价、振幅、C2C、RV20、VRP。
+  - Today's pre-market range/return (if available).
+    今天的盘前振幅/收益率（如可用）。
+  - Upcoming events: FOMC, NFP, earnings season.
+    即将到来的事件：FOMC、NFP、财报季。
+  - Action suggestion: "BUY STRADDLE AT OPEN" for HIGH signals.
+    操作建议：HIGH 信号时"开盘买入跨式"。
 
-Config:
-    Set BARK_KEY in config/bark.txt (one line, just the key)
-    Or pass via --bark-key argument
-    Or set BARK_KEY environment variable
+Usage / 用法:
+    python -m live.notify                     # run once / 运行一次
+    python -m live.notify --bark-key YOUR_KEY # override key / 覆盖密钥
+    python -m live.notify --dry-run            # preview without pushing / 预览不推送
+
+Config / 配置:
+    Set BARK_KEY in config/bark.txt (one line, just the key).
+    在 config/bark.txt 中设置 BARK_KEY（一行，仅密钥）。
+    Or pass via --bark-key argument, or set BARK_KEY env variable.
+    或通过 --bark-key 参数传入，或设置 BARK_KEY 环境变量。
 
 Cron (Mac Mini, Pacific Time — 6:29 AM PT = 9:29 AM ET):
     29 6 * * 1-5 cd /path/to/qqq_trading && python -m live.notify >> logs/notify.log 2>&1

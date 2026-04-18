@@ -1,10 +1,31 @@
 """Shared helpers for task-specific eval scripts.
+任务特定评估脚本的共享辅助模块。
 
 Three task-specific scripts (eval/eval_range_0dte.py, eval/eval_otc_0dte.py,
 eval/eval_c2c_1dte.py) each evaluate their task's true label against any model's
 predicted probabilities. This lets you cross-evaluate: e.g., use the c2c_1dte
-model to "predict" range_0dte — useful for showing why a task-matched model
-wins.
+model to "predict" range_0dte — useful for showing why a task-matched model wins.
+三个任务特定脚本各自将其任务的真实标签与任意模型的预测概率进行评估。
+这允许交叉评估：例如用 c2c_1dte 模型来"预测" range_0dte——
+有助于展示为什么任务匹配的模型更优。
+
+This module provides / 本模块提供:
+  1. TASKS dict    — single source of truth defining each prediction task.
+                     定义每个预测任务的唯一事实来源。
+  2. load_features — rebuild the full 122-feature DataFrame from cached parquets.
+                     从缓存的 parquet 文件重建完整的 122 特征 DataFrame。
+  3. build_eval_table — compute predictions for any (model, task) pair.
+                        为任意（模型, 任务）组合计算预测结果。
+  4. Report printers — formatted output for alerts, monthly summary, missed moves,
+                       false alarms.
+                       格式化输出：警报列表、月度汇总、漏报大波动、假阳性。
+
+Cross-evaluation matrix / 交叉评估矩阵:
+  With 3 models × 3 eval targets = 9 combinations, you can build a full
+  cross-evaluation matrix to verify that task-matched models consistently
+  outperform cross-task models on their own target.
+  3 个模型 × 3 个评估目标 = 9 种组合，可构建完整的交叉评估矩阵，
+  验证任务匹配模型在其自身目标上始终优于跨任务模型。
 """
 from __future__ import annotations
 
@@ -24,25 +45,38 @@ from models.training import load_model
 from utils.paths import OUTPUT_DIR, MODEL_DIR
 
 
-# task_name → how to compute the TRUE outcome for that day
-# shift=0:  predict & measure on the SAME day (0DTE)
-# shift=-1: predict today, measure tomorrow (1DTE) — actual = raw_col.shift(-1)
+# Task definitions — single source of truth for all evaluation scripts.
+# 任务定义——所有评估脚本的唯一事实来源。
+#
+# Each entry maps a task_name to:
+# 每个条目将 task_name 映射到：
+#   col:           Column in daily_metrics containing the raw metric.
+#                  daily_metrics 中包含原始指标的列名。
+#   shift:         0 for 0DTE (predict & measure same day),
+#                  -1 for 1DTE (predict today, measure tomorrow).
+#                  0 表示 0DTE（当天预测当天衡量），
+#                  -1 表示 1DTE（今天预测明天衡量）。
+#   name:          Human-readable display name for reports.
+#                  报告中的可读显示名称。
+#   default_model: Task-matched model filename stem (without .joblib).
+#                  任务匹配模型的文件名主干（不含 .joblib）。
 TASKS = {
     "range_0dte": {
-        "col":           "intraday_range",
-        "shift":          0,
+        "col":           "intraday_range",        # (H-L)/O — straddle target / 跨式期权目标
+        "shift":          0,                       # 0DTE: same-day / 当天
         "name":          "0DTE Range (H-L)/O",
         "default_model": "range_0dte_2pct_model",
     },
     "otc_0dte": {
-        "col":           "abs_open_to_close",
-        "shift":          0,
+        "col":           "abs_open_to_close",     # |O2C| — directional move / 方向性波动
+        "shift":          0,                       # 0DTE: same-day / 当天
         "name":          "0DTE |O2C|",
         "default_model": "otc_0dte_2pct_model",
     },
     "c2c_1dte": {
-        "col":           "abs_close_to_close",
-        "shift":         -1,
+        "col":           "abs_close_to_close",    # |C2C| — overnight + intraday / 隔夜+日内
+        "shift":         -1,                       # 1DTE: predict today → measure tomorrow
+                                                   # 今天预测 → 明天衡量
         "name":          "1DTE next-day |C2C|",
         "default_model": "c2c_1dte_2pct_model",
     },
@@ -50,6 +84,16 @@ TASKS = {
 
 
 def load_features() -> pd.DataFrame:
+    """Load cached data and rebuild the full 122-feature DataFrame.
+    加载缓存数据并重建完整的 122 特征 DataFrame。
+
+    Pipeline: daily_metrics.parquet → base features (53)
+              + external_data.parquet → external features (26)
+              → interaction features (43) = 122 total.
+    流程：daily_metrics.parquet → 基础特征 (53)
+          + external_data.parquet → 外部特征 (26)
+          → 交互特征 (43) = 共 122 个。
+    """
     daily = pd.read_parquet(OUTPUT_DIR / "daily_metrics.parquet")
     daily.index = pd.to_datetime(daily.index)
     ext = pd.read_parquet(OUTPUT_DIR / "external_data.parquet")
@@ -61,7 +105,18 @@ def load_features() -> pd.DataFrame:
 
 
 def resolve_model_path(name_or_path: str) -> Path:
-    """Accept a model name ('range_0dte_2pct_model'), short alias, or explicit path."""
+    """Accept a model name ('range_0dte_2pct_model'), short alias, or explicit path.
+    接受模型名称、简短别名或完整路径。
+
+    Resolution order / 解析顺序:
+      1. Absolute path → use directly / 绝对路径 → 直接使用
+      2. MODEL_DIR / name_or_path / 模型目录 / 名称
+      3. MODEL_DIR / name_or_path.joblib
+      4. MODEL_DIR / name_or_path_model.joblib
+
+    Raises FileNotFoundError with available models if nothing matches.
+    若无匹配则抛出 FileNotFoundError 并列出可用模型。
+    """
     p = Path(name_or_path)
     if p.is_absolute() and p.exists():
         return p
@@ -82,9 +137,31 @@ def resolve_model_path(name_or_path: str) -> Path:
 def build_eval_table(df: pd.DataFrame, task: str, model_name: str,
                      start: str | None = None, end: str | None = None,
                      thresh: float = 0.02) -> tuple[pd.DataFrame, str]:
-    """Return a per-day DataFrame with prob, actual, hit flag, and OHLC context.
+    """Build a per-day evaluation DataFrame with predictions and market context.
+    构建逐日评估 DataFrame，包含预测结果和市场上下文。
 
-    thresh defines what counts as a "hit" for this task (e.g., 0.02 for range>2%).
+    This is the core cross-evaluation function. It works with ANY model
+    on ANY task — the model provides probabilities, the task defines
+    the ground truth label.
+    这是核心交叉评估函数。它可以用任意模型评估任意任务——
+    模型提供概率值，任务定义真实标签。
+
+    Args:
+        df:         Feature DataFrame (from load_features).
+                    特征 DataFrame（来自 load_features）。
+        task:       Task name (key in TASKS dict).
+                    任务名称（TASKS 字典的键）。
+        model_name: Model name or path to load.
+                    模型名称或路径。
+        start/end:  Date range to evaluate. / 评估的日期范围。
+        thresh:     Move threshold defining a "hit" (default 0.02 = 2%).
+                    定义"命中"的波动阈值（默认 0.02 = 2%）。
+
+    Returns:
+        (eval_table, model_filename): DataFrame with columns prob/actual_pct/hit/
+        OHLC context, and the resolved model filename string.
+        (评估表, 模型文件名): 包含 prob/actual_pct/hit/OHLC 上下文的 DataFrame，
+        以及解析后的模型文件名字符串。
     """
     tc = TASKS[task]
     model_path = resolve_model_path(model_name)
@@ -142,16 +219,27 @@ def build_eval_table(df: pd.DataFrame, task: str, model_name: str,
 
 
 def format_events(row) -> str:
+    """Build a compact event tag string from boolean flag columns.
+    从布尔标记列构建紧凑的事件标签字符串。
+
+    Examples / 示例: "FOMC,EARN", "NFP-1", "-" (no events).
+    """
     evts = []
-    if row.get("is_fomc_day", 0) == 1: evts.append("FOMC")
-    if row.get("is_nfp_day", 0) == 1:  evts.append("NFP")
-    if row.get("fomc_imminent", 0) == 1 and row.get("is_fomc_day", 0) != 1: evts.append("FOMC-1")
-    if row.get("nfp_imminent", 0) == 1 and row.get("is_nfp_day", 0) != 1:   evts.append("NFP-1")
-    if row.get("is_earnings_season", 0) == 1: evts.append("EARN")
+    if row.get("is_fomc_day", 0) == 1: evts.append("FOMC")       # FOMC 公布日
+    if row.get("is_nfp_day", 0) == 1:  evts.append("NFP")        # 非农公布日
+    if row.get("fomc_imminent", 0) == 1 and row.get("is_fomc_day", 0) != 1: evts.append("FOMC-1")  # FOMC 前夜
+    if row.get("nfp_imminent", 0) == 1 and row.get("is_nfp_day", 0) != 1:   evts.append("NFP-1")   # 非农前夜
+    if row.get("is_earnings_season", 0) == 1: evts.append("EARN") # 财报季
     return ",".join(evts) if evts else "-"
 
 
 def _summary_metrics(sig: pd.DataFrame, threshold: float) -> dict:
+    """Compute confusion matrix and classification metrics for a given threshold.
+    计算给定阈值下的混淆矩阵和分类指标。
+
+    Returns dict with: n, base_rate, alerts, tp, fp, fn, tn, precision, recall, auc, ap.
+    返回字典包含：样本数、基准率、信号数、TP、FP、FN、TN、精确率、召回率、AUC、AP。
+    """
     y_true = sig["hit"].astype(int)
     y_prob = sig["prob"]
     alerts = sig[sig["prob"] >= threshold]
@@ -173,6 +261,8 @@ def _summary_metrics(sig: pd.DataFrame, threshold: float) -> dict:
 
 
 def print_header(task: str, model_file: str, sig: pd.DataFrame, threshold: float, thresh: float):
+    """Print the report header with task info, model info, and summary metrics.
+    打印报告头部，包含任务信息、模型信息和汇总指标。"""
     tc = TASKS[task]
     m = _summary_metrics(sig, threshold)
     match = "(task-matched)" if model_file.startswith(tc["default_model"]) else "(CROSS-TASK)"
@@ -188,6 +278,8 @@ def print_header(task: str, model_file: str, sig: pd.DataFrame, threshold: float
 
 
 def print_alerts(alerts: pd.DataFrame):
+    """Print detailed alert table: each signal day with prob, actual, OHLC, events, hit.
+    打印详细警报表：每个信号日的概率、实际值、OHLC、事件标记、命中状态。"""
     print("--- ALERTS ---")
     hdr = (f"{'Date':<12}{'Prob':>6}{'Actual%':>8}{'Range%':>8}{'C2C%':>7}{'O2C%':>7}"
            f"{'Gap%':>7}{'MaxDD':>7}{'MaxRU':>7}{'RV20':>6}{'VRP':>7}  Events  Hit")
@@ -203,6 +295,8 @@ def print_alerts(alerts: pd.DataFrame):
 
 
 def print_monthly(alerts: pd.DataFrame):
+    """Print monthly aggregation: signals, hits, hit rate, avg/max actual move.
+    打印月度聚合：信号数、命中数、命中率、平均/最大实际波动。"""
     a = alerts.copy()
     a["month"] = a.index.to_period("M")
     monthly = a.groupby("month").agg(
@@ -222,7 +316,13 @@ def print_monthly(alerts: pd.DataFrame):
 
 
 def print_missed(sig: pd.DataFrame, threshold: float, miss_thresh: float):
-    """Days where ACTUAL was big (> miss_thresh) but model didn't signal (prob < threshold)."""
+    """Print missed big moves: days where actual exceeded miss_thresh but model probability < threshold.
+    打印漏报的大波动：实际值超过 miss_thresh 但模型概率低于 threshold 的日子。
+
+    These are FALSE NEGATIVES — the model's blind spots. Understanding them
+    helps identify which market regimes the model struggles with.
+    这些是假阴性——模型的盲区。分析它们有助于识别模型在哪些市场状态下表现不佳。
+    """
     missed = sig[(sig["prob"] < threshold) & (sig["actual_pct"] > miss_thresh)]
     print(f"--- MISSED BIG MOVES (prob < {threshold}, actual > {miss_thresh}%): {len(missed)} days ---")
     if missed.empty:
@@ -236,6 +336,14 @@ def print_missed(sig: pd.DataFrame, threshold: float, miss_thresh: float):
 
 
 def print_false_alarms(alerts: pd.DataFrame, thresh_pct: float):
+    """Print false alarms: signal days where actual move was below the hit threshold.
+    打印假阳性：模型发出信号但实际波动低于命中阈值的日子。
+
+    These are FALSE POSITIVES — each one costs a straddle premium or triggers
+    an unnecessary trade. Minimizing these is critical for profitability.
+    这些是假阳性——每一次都会浪费跨式期权权利金或触发不必要的交易。
+    最小化假阳性对盈利能力至关重要。
+    """
     fp = alerts[alerts["actual_pct"] <= thresh_pct]
     print(f"--- FALSE ALARMS (signal fired, actual <= {thresh_pct}%): {len(fp)} days ---")
     if fp.empty:
@@ -255,7 +363,27 @@ def run_report(task: str, model: str | None = None,
                start: str = "2023-01-01", end: str | None = None,
                thresh: float = 0.02, threshold: float = 0.5,
                miss_thresh: float = 3.0):
-    """Entry point used by task-specific eval scripts."""
+    """Entry point used by task-specific eval scripts.
+    任务特定评估脚本使用的入口函数。
+
+    Orchestrates the full evaluation pipeline: load features → build eval table
+    → print header, alerts, monthly summary, missed moves, and false alarms.
+    编排完整的评估流程：加载特征 → 构建评估表 → 打印头部、警报、月度汇总、
+    漏报大波动和假阳性。
+
+    Args:
+        task:        Task name from TASKS dict ("range_0dte", "otc_0dte", "c2c_1dte").
+                     TASKS 字典中的任务名称。
+        model:       Model name or None (uses task-matched default).
+                     模型名称或 None（使用任务匹配的默认模型）。
+        start/end:   Evaluation date range. / 评估日期范围。
+        thresh:      Hit threshold (0.02 = actual > 2% counts as hit).
+                     命中阈值（0.02 = 实际值 > 2% 计为命中）。
+        threshold:   Signal threshold (prob >= threshold fires a signal).
+                     信号阈值（概率 >= threshold 触发信号）。
+        miss_thresh: Actual% above which non-signals count as missed (for FN report).
+                     非信号日实际值超过此阈值计为漏报（用于假阴性报告）。
+    """
     if task not in TASKS:
         raise ValueError(f"Unknown task '{task}'. Choose from {list(TASKS)}")
     if model is None:

@@ -1,8 +1,25 @@
 """
-Phase 9 (research): Full backtest across all thresholds (1%, 2%, 3%, 5%).
-Uses the interaction model (XGBoost) with walk-forward on test period 2023-2026.
+Phase 9 (research): Full backtest across all move thresholds (1%, 2%, 3%, 5%).
+第九阶段（研究）：全阈值回测（1%、2%、3%、5% 大幅波动）。
 
-Refactored to import from qqq_trading package instead of duplicating code.
+Trains both XGBoost and LightGBM interaction models for each threshold target,
+then evaluates on the 2023-2026 test period. Produces:
+针对每个阈值目标分别训练 XGBoost 和 LightGBM 交互模型，
+然后在 2023-2026 测试期上评估。输出内容包括：
+
+  - Per-threshold AUC-ROC, Average Precision, and Brier scores.
+    各阈值的 AUC-ROC、平均精度和 Brier 分数。
+  - Confusion matrices at the optimal F1 threshold for each target.
+    各目标在最优 F1 阈值处的混淆矩阵。
+  - Hit rate curves across confidence levels (0.2 to 0.8).
+    不同置信度水平（0.2 至 0.8）下的命中率曲线。
+  - Alert count curves showing selectivity at each threshold.
+    各阈值下的告警数量曲线，展示选择性。
+  - Day-by-day high-confidence alert logs (XGBoost >= 0.6) with actual outcomes.
+    高置信度告警逐日记录（XGBoost >= 0.6）及实际结果。
+
+Output: 16_full_backtest.png saved to CHART_DIR.
+输出：16_full_backtest.png 保存至 CHART_DIR。
 """
 import sys
 from pathlib import Path

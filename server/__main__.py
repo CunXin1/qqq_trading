@@ -1,4 +1,12 @@
-"""Entry point: python -m server"""
+"""
+Entry point for running the server: ``python -m server``.
+服务器启动入口：通过 ``python -m server`` 运行。
+
+Launches a uvicorn ASGI server hosting the QQQ Trading Dashboard.
+Default listen address is 0.0.0.0:8888; configurable via --host / --port.
+启动 uvicorn ASGI 服务器来托管 QQQ 交易仪表盘。
+默认监听地址为 0.0.0.0:8888，可通过 --host / --port 参数自定义。
+"""
 import argparse
 import uvicorn
 from server.app import create_app

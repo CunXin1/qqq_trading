@@ -1,9 +1,30 @@
 """
-Phase 5: Analyze optimal training window length for prediction.
+Phase 5 (research): Analyze optimal training window length for prediction.
+第五阶段（研究）：分析预测模型的最佳训练窗口长度。
 
-Tests different historical lookback windows using walk-forward evaluation.
-Uses shared feature registry and model creation from the qqq_trading package;
-all window-analysis logic is unique to this research script.
+Runs 4 complementary tests to determine the best amount of historical data
+for training the XGBoost prediction model:
+运行 4 项互补测试，确定 XGBoost 预测模型的最佳历史数据量：
+
+  1. Fixed test, vary start year — keeps test at 2023-2026, trains from 2000..2019
+     start years. Measures AUC vs training window size.
+     固定测试集，变化起始年份 — 测试集固定为 2023-2026，训练从 2000..2019 各年开始。
+     衡量 AUC 与训练窗口大小的关系。
+  2. Walk-forward rolling window — retrain yearly with 3/5/7/10/15/all-year windows.
+     滚动窗口前推验证 — 按年重新训练，使用 3/5/7/10/15/全部 年窗口。
+  3. Regime-aware performance — splits test period by realized-volatility regime
+     (low/med/high) to check if model generalizes across market conditions.
+     状态感知性能 — 按已实现波动率状态（低/中/高）划分测试期，
+     检验模型在不同市场状态下的泛化能力。
+  4. Exponential decay weighting — uses all data but downweights older samples
+     with half-lives of 1/2/4/8/16 years and uniform.
+     指数衰减加权 — 使用全部数据但对较旧样本降权，
+     半衰期为 1/2/4/8/16 年及均匀加权。
+
+Conclusion: Using all available historical data (2000-2022) yields the best
+test AUC, indicating that older data still contributes useful signal.
+结论：使用全部可用历史数据（2000-2022）可获得最佳测试 AUC，
+表明较早的数据仍能贡献有用信号。
 """
 import sys
 from pathlib import Path

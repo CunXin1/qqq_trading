@@ -1,10 +1,32 @@
 """
-Phase 12 (research): Robustness validation.
-1. Monotonicity test: does hit rate increase smoothly with confidence?
-2. Purged walk-forward CV: does AUC hold across time?
-3. Feature decay: do features lose power over time?
+Phase 12 (research): Robustness validation — 3 stress tests.
+第十二阶段（研究）：鲁棒性验证 — 3 项压力测试。
 
-Refactored to import from qqq_trading package instead of duplicating code.
+Validates that the prediction model is not overfit by running:
+通过以下测试验证预测模型未过拟合：
+
+  1. Monotonicity test — checks whether hit rate increases smoothly as the
+     confidence threshold rises. Violations suggest noisy or poorly-calibrated
+     probability estimates.
+     单调性测试 — 检查命中率是否随置信度阈值升高而平滑递增。
+     违反表明概率估计有噪声或校准不良。
+
+  2. Purged walk-forward CV — trains on rolling 5-year windows with a 5-day
+     purge gap to prevent lookahead leakage. Compares year-by-year OOS AUC
+     against the static train/test split to detect overfitting.
+     带清洗的前推交叉验证 — 使用滚动 5 年窗口训练，设 5 天清洗间隔以防止
+     前视偏差。逐年比较样本外 AUC 与静态训练/测试划分，检测过拟合。
+
+  3. Feature decay across eras — trains separate models on 2000-2007, 2008-2015,
+     and 2016-2022, then computes Spearman rank correlation of feature importance
+     vectors. High correlation (rho > 0.7) = stable features; low = structural
+     regime change or feature instability.
+     跨时代特征衰减 — 分别在 2000-2007、2008-2015、2016-2022 三个时期训练模型，
+     然后计算特征重要性向量的 Spearman 秩相关系数。高相关（rho > 0.7）= 特征稳定；
+     低相关 = 结构性市场状态变化或特征不稳定。
+
+Output: 19_robustness.png saved to CHART_DIR.
+输出：19_robustness.png 保存至 CHART_DIR。
 """
 import sys
 from pathlib import Path

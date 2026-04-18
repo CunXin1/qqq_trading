@@ -1,8 +1,23 @@
 """
-Phase 4: Generate comprehensive HTML report with all analysis results.
+Phase 4 (research): Generate comprehensive standalone HTML report.
+第四阶段（研究）：生成全面的独立 HTML 报告。
 
-Thin wrapper — only the path setup is replaced with package imports.
-All HTML generation logic is unique to this research script.
+Produces a single self-contained HTML file (report.html) with:
+生成一个自包含的 HTML 文件（report.html），包含：
+
+  - All analysis charts embedded as base64-encoded PNG images (no external deps).
+    所有分析图表以 base64 编码的 PNG 图片内嵌（无外部依赖）。
+  - Summary statistics tables (return distributions, large-move frequencies).
+    汇总统计表（收益率分布、大幅波动频率）。
+  - Model comparison tables (AUC, AP for each algorithm and target).
+    模型对比表（各算法和目标的 AUC、AP）。
+  - Key findings section (volatility clustering, pre-market signal, gap signal, ML).
+    关键发现部分（波动率聚集、盘前信号、跳空信号、机器学习）。
+  - Limitations & caveats section (survivorship bias, regime changes, overfitting).
+    局限性与注意事项（幸存者偏差、市场状态变化、过拟合风险）。
+
+Output: report.html saved to OUTPUT_DIR.
+输出：report.html 保存至 OUTPUT_DIR。
 """
 import sys
 from pathlib import Path

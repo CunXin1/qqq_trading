@@ -1,18 +1,49 @@
 """
 Auto-trade QQQ 0DTE straddle based on model signal.
+基于模型信号自动交易 QQQ 0DTE 跨式期权。
 
-Strategy:
-  - At 9:40 AM ET, buy ATM straddle (2 calls + 2 puts = 4 contracts)
-  - Constraint: call + put premium <= $3.00/share ($300 for 1 pair)
-  - When total position doubles in value, sell half (1 call + 1 put)
-  - Keep remaining 1 call + 1 put for manual exit
+Strategy / 策略:
+  - At 9:40 AM ET, buy ATM straddle (2 calls + 2 puts = 4 contracts).
+    美东 9:40，买入 ATM 跨式（2 张看涨 + 2 张看跌 = 4 张合约）。
+  - Constraint: call + put premium <= $3.00/share ($300 for 1 pair).
+    约束：看涨 + 看跌权利金 <= $3.00/股（$300/对）。
+  - When total position doubles in value (2x), sell half (1 call + 1 put).
+    当总仓位价值翻倍（2x）时，卖出一半（1 张看涨 + 1 张看跌）。
+  - Keep remaining 1 call + 1 put for manual exit.
+    保留剩余 1 张看涨 + 1 张看跌由人工管理退出。
 
-Usage:
-    python -m live.trader --paper              # paper trading (SAFE)
-    python -m live.trader --paper --dry-run     # simulate only, no orders
-    python -m live.trader --live                # REAL MONEY (careful!)
+Risk controls / 风险控制:
+  - MAX_PAIR_COST: Maximum straddle premium per share ($3.00 default).
+                   每股最大跨式权利金（默认 $3.00）。
+  - NUM_PAIRS:     Number of straddle pairs to buy (2 default = 4 contracts).
+                   买入的跨式对数（默认 2 = 4 张合约）。
+  - CUTOFF_TIME:   Stop monitoring at 3:30 PM ET (let remaining expire/exercise).
+                   美东 15:30 停止监控（让剩余合约到期/行权）。
+  - Limit orders:  All orders are limit (not market) with slight slippage allowance.
+                   所有订单为限价单（非市价单），允许少量滑点。
 
-WARNING: This trades real money when --live is used. Always test with --paper first.
+Execution flow / 执行流程:
+  1. Connect to IBKR → get QQQ spot price.
+     连接 IBKR → 获取 QQQ 现货价格。
+  2. Find ATM 0DTE call + put contracts.
+     找到 ATM 0DTE 看涨 + 看跌合约。
+  3. Check premiums against MAX_PAIR_COST.
+     检查权利金是否超过 MAX_PAIR_COST。
+  4. Buy NUM_PAIRS calls + puts (limit orders).
+     买入 NUM_PAIRS 张看涨 + 看跌（限价单）。
+  5. Monitor every 15s: if straddle value >= 2x entry, sell half.
+     每 15 秒监控：如果跨式价值 >= 2 倍成本，卖出一半。
+  6. Disconnect at CUTOFF_TIME or after profit-take.
+     在 CUTOFF_TIME 或止盈后断开连接。
+
+Usage / 用法:
+    python -m live.trader --paper              # paper trading (SAFE) / 模拟交易（安全）
+    python -m live.trader --paper --dry-run     # simulate only, no orders / 仅模拟，不下单
+    python -m live.trader --live                # REAL MONEY (careful!) / 实盘（谨慎！）
+
+WARNING / 警告:
+    This trades real money when --live is used. Always test with --paper first.
+    使用 --live 时会交易真金白银。务必先用 --paper 测试。
 """
 from __future__ import annotations
 
@@ -30,12 +61,12 @@ import numpy as np
 # Configuration
 # ═════════════════════════════════════════════
 
-MAX_PAIR_COST = 3.00        # max $3.00/share for call+put (= $300 per pair)
-NUM_PAIRS = 2               # buy 2 pairs = 4 contracts total
-PROFIT_TARGET = 2.0         # sell half when value doubles
-POLL_INTERVAL_SEC = 15      # check price every 15 seconds
-ENTRY_TIME = time(9, 40)    # enter at 9:40 AM ET
-CUTOFF_TIME = time(15, 30)  # stop monitoring at 3:30 PM ET
+MAX_PAIR_COST = 3.00        # Max $3.00/share for call+put (= $300 per pair) / 每股最大权利金
+NUM_PAIRS = 2               # Buy 2 pairs = 4 contracts total / 买入 2 对 = 共 4 张合约
+PROFIT_TARGET = 2.0         # Sell half when value doubles / 价值翻倍时卖出一半
+POLL_INTERVAL_SEC = 15      # Check price every 15 seconds / 每 15 秒检查价格
+ENTRY_TIME = time(9, 40)    # Enter at 9:40 AM ET / 美东 9:40 入场
+CUTOFF_TIME = time(15, 30)  # Stop monitoring at 3:30 PM ET / 美东 15:30 停止监控
 
 
 # ═════════════════════════════════════════════

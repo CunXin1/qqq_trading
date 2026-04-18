@@ -1,9 +1,30 @@
 """
-Phase 2: Pattern Discovery & Visualization.
+Phase 2 (research): Pattern Discovery & Visualization.
+第二阶段（研究）：模式发现与可视化。
 
-Finds statistical patterns that precede large QQQ moves.
-Uses shared path/plotting utilities from the qqq_trading package;
-all analysis logic is unique to this research script.
+Performs 8 pattern analyses on QQQ daily metrics data, each generating a
+chart saved to CHART_DIR. Finds statistical patterns that precede large moves.
+对 QQQ 每日指标数据进行 8 项模式分析，每项生成图表保存至 CHART_DIR。
+寻找大幅波动前的统计模式。
+
+Analyses / 分析项:
+  1. Yearly frequency — large-move day frequency by year.
+     年度频率 — 按年统计大幅波动日频率。
+  2. Calendar effects — day-of-week, month, OPEX week, month-start/end.
+     日历效应 — 星期、月份、期权到期周、月初/月末。
+  3. Volatility clustering — ACF of absolute returns, conditional probabilities.
+     波动率聚集 — 绝对收益率自相关函数、条件概率。
+  4. Pre-market signal — correlation between pre-market range/volume and
+     regular-session large moves.
+     盘前信号 — 盘前振幅/成交量与常规交易时段大幅波动的相关性。
+  5. Gap analysis — overnight gap size/direction vs intraday move.
+     跳空分析 — 隔夜跳空幅度/方向与日内波动的关系。
+  6. Volume signal — volume ratio quintiles vs same-day/next-day large moves.
+     成交量信号 — 成交量比率五分位与当日/次日大幅波动的关系。
+  7. Regime analysis — volatility regime classification and transition matrix.
+     市场状态分析 — 波动率状态分类及转移矩阵。
+  8. Consecutive patterns — streak length and mean-reversion effects.
+     连续模式 — 连涨/连跌天数及均值回归效应。
 """
 import sys
 from pathlib import Path

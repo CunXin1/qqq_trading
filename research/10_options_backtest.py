@@ -1,15 +1,32 @@
 """
-Phase 10 (research): Options-oriented backtest for 0DTE and 1DTE straddles.
+Phase 10 (research): Options straddle backtest for 0DTE and 1DTE strategies.
+第十阶段（研究）：0DTE 和 1DTE 期权跨式组合回测。
 
-0DTE: Buy straddle at open (9:30), expires at close (16:00)
-  -> Predict TODAY's |open-to-close| and intraday_range
-  -> Features: pre-market + prior day data (available before 9:30)
+Compares two options straddle scenarios using ML prediction:
+使用机器学习预测对比两种期权跨式组合场景：
 
-1DTE: Buy straddle at today's close, expires tomorrow close
-  -> Predict TOMORROW's |close-to-close|
-  -> Features: today's full data (available after 16:00)
+  0DTE (zero days to expiration / 零日到期):
+    Buy straddle at open (9:30), expires at close (16:00).
+    开盘买入跨式组合（9:30），收盘到期（16:00）。
+    Targets: |open-to-close| and intraday_range at 1%/2%/3%/5%.
+    目标：|开盘到收盘| 和 日内振幅，阈值 1%/2%/3%/5%。
+    Features: pre-market data + prior-day features (available before 9:30).
+    特征：盘前数据 + 前一日特征（9:30 前可获得）。
 
-Refactored to import from qqq_trading package instead of duplicating code.
+  1DTE (one day to expiration / 一日到期):
+    Buy straddle at today's close, expires tomorrow close.
+    今日收盘买入跨式组合，明日收盘到期。
+    Target: |close-to-close| at 1%/2%/3%/5%.
+    目标：|收盘到收盘|，阈值 1%/2%/3%/5%。
+    Features: all data through today's close (available after 16:00).
+    特征：截至今日收盘的全部数据（16:00 后可获得）。
+
+Trains XGBoost + LightGBM for each scenario/threshold and visualizes
+AUC comparison, hit rate curves, and alert counts.
+为每个场景/阈值训练 XGBoost + LightGBM，并可视化 AUC 对比、命中率曲线和告警数量。
+
+Output: 17_options_backtest.png saved to CHART_DIR.
+输出：17_options_backtest.png 保存至 CHART_DIR。
 """
 import sys
 from pathlib import Path

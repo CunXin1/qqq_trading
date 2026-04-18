@@ -1,10 +1,27 @@
 """
-Phase 13 (research): Occam's Razor / Top-K Ablation.
-Strip model down to Top 3/5/10/20 features and see how much AUC drops.
-If core alpha is concentrated in a few features -> robust.
-If AUC collapses -> model was overfitting to noise.
+Phase 13 (research): Occam's Razor / Top-K Feature Ablation Study.
+第十三阶段（研究）：奥卡姆剃刀 / Top-K 特征消融实验。
 
-Refactored to import from qqq_trading package instead of duplicating code.
+Tests whether the model's predictive power is concentrated in a small number
+of core features or dispersed across many (indicating overfit risk).
+测试模型的预测能力是集中在少数核心特征上，还是分散在众多特征中（后者意味着过拟合风险）。
+
+Procedure / 实验流程:
+  1. Train full model to rank features by importance.
+     训练完整模型，按重要性对特征排序。
+  2. Retrain with Top-K subsets: K = 1, 2, 3, 5, 7, 10, 15, 20, 30, 50, all.
+     使用 Top-K 子集重新训练：K = 1, 2, 3, 5, 7, 10, 15, 20, 30, 50, 全部。
+  3. Measure AUC retention at each K — if Top-5 retains >95% of full AUC,
+     the core alpha is concentrated and the model is robust.
+     衡量每个 K 值下的 AUC 保留率 — 若 Top-5 保留 >95% 的完整 AUC，
+     则核心 alpha 集中，模型鲁棒。
+  4. Walk-forward validation comparing Top-5 vs Full model across 2015-2026
+     to confirm the ablation result holds out-of-sample.
+     前推验证对比 Top-5 与完整模型在 2015-2026 的表现，
+     确认消融结果在样本外成立。
+
+Output: 20_occam_razor.png saved to CHART_DIR.
+输出：20_occam_razor.png 保存至 CHART_DIR。
 """
 import sys
 from pathlib import Path

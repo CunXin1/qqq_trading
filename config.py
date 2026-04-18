@@ -79,7 +79,7 @@ def load_config(path: Optional[Path] = None) -> Config:
         path = PROJECT_ROOT / "config" / "default.yaml"
 
     if path.exists():
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             overrides = yaml.safe_load(f) or {}
 
         if "splits" in overrides:

@@ -1,4 +1,25 @@
-"""FastAPI application factory."""
+"""
+FastAPI application factory — creates and configures the web app.
+FastAPI 应用工厂 — 创建并配置 Web 应用。
+
+GET Routes / GET 路由:
+    /         — Dashboard: current signal, recent alerts, task status.
+                仪表盘：当前信号、最近告警、任务状态。
+    /signal   — Detailed prediction view for the latest trading day.
+                最新交易日的详细预测视图。
+    /history  — Historical signal list with hit/miss classification and metrics.
+                历史信号列表，包含命中/未命中分类及评估指标。
+    /data     — Data file freshness and row-count status.
+                数据文件新鲜度及行数状态。
+    /model    — Model metadata, feature list, and evaluation metrics (AUC, AP, Brier).
+                模型元数据、特征列表及评估指标（AUC、AP、Brier）。
+
+POST Routes / POST 路由:
+    /actions/fetch   — Trigger background data fetch + merge (redirects to /).
+                       触发后台数据抓取与合并（重定向至 /）。
+    /actions/predict — Trigger background prediction refresh (redirects to /signal).
+                       触发后台预测刷新（重定向至 /signal）。
+"""
 from pathlib import Path
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
