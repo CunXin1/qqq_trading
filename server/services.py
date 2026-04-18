@@ -65,7 +65,7 @@ def _load_model():
     _check_cache()
     if _cache["model"] is None:
         from models.training import load_model
-        model, feat_cols = load_model(MODEL_DIR / "interaction_model.joblib")
+        model, feat_cols = load_model(MODEL_DIR / "interaction_2000_2019.joblib")
         _cache["model"] = model
         _cache["feature_cols"] = feat_cols
     return _cache["model"], _cache["feature_cols"]
@@ -319,7 +319,7 @@ def get_model_info():
     info = {
         "model_type": type(model).__name__,
         "n_features": len(feature_cols) if feature_cols else 0,
-        "model_file": "interaction_model.joblib",
+        "model_file": "interaction_2000_2019.joblib",
         "features": feature_cols[:20] if feature_cols else [],  # show first 20
         "features_total": len(feature_cols) if feature_cols else 0,
     }
@@ -363,7 +363,7 @@ def get_eval_report(task: str = "range_0dte", model: str | None = None,
                     miss_thresh: float = 3.0) -> dict:
     """Evaluation report with file-mtime caching.
     带文件修改时间缓存的评估报告。"""
-    from eval._common import get_report_data, TASKS
+    from eval._common import get_report_data, TASKS, list_models
 
     params = (task, model, start, end, thresh, threshold, miss_thresh)
     dm_path = OUTPUT_DIR / "daily_metrics.parquet"
@@ -377,10 +377,12 @@ def get_eval_report(task: str = "range_0dte", model: str | None = None,
         data = get_report_data(task, model, start, end, thresh, threshold, miss_thresh)
         _eval_cache.update(data=data, params=params, dm_mtime=mtime)
 
-    # Attach available tasks for the filter form
+    # Attach available tasks and models for the filter form
     data["available_tasks"] = [
         {"key": k, "name": v["name"]} for k, v in TASKS.items()
     ]
+    data["available_models"] = list_models()
+    data["selected_model"] = model or TASKS[task]["default_model"]
     return data
 
 

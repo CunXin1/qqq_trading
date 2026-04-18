@@ -1,46 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Data Status - QQQ Trading{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold">Data Status</h1>
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+    <h1 style="font-size:1.5rem; font-weight:600; color:var(--text); margin:0;">Data Status</h1>
     <form method="POST" action="/actions/fetch">
-        <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded">
-            Fetch Latest
-        </button>
+        <button class="btn-primary">Fetch Latest Data</button>
     </form>
 </div>
 
-<div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-    <table class="w-full text-sm">
-        <thead class="text-gray-500 bg-gray-900 border-b border-gray-800">
-            <tr>
-                <th class="text-left px-4 py-3">Dataset</th>
-                <th class="text-left px-4">File</th>
-                <th class="text-right px-4">Size</th>
-                <th class="text-right px-4">Rows</th>
-                <th class="text-right px-4">Last Date</th>
-                <th class="text-right px-4">Modified</th>
-                <th class="text-center px-4">Status</th>
-            </tr>
-        </thead>
+<div class="card card-shadow" style="overflow-x:auto; padding:0;">
+    <table class="data-table">
+        <thead><tr>
+            <th style="text-align:left;">Dataset</th>
+            <th style="text-align:left;">File</th>
+            <th style="text-align:right;">Size</th>
+            <th style="text-align:right;">Rows</th>
+            <th style="text-align:left;">Last Date</th>
+            <th style="text-align:left;">Modified</th>
+            <th style="text-align:center;">Status</th>
+        </tr></thead>
         <tbody>
             {% for f in files %}
-            <tr class="border-b border-gray-800/30">
-                <td class="px-4 py-2 font-medium">{{ f.name }}</td>
-                <td class="px-4 text-gray-500">{{ f.path }}</td>
-                <td class="text-right px-4">{{ f.size_kb }} KB</td>
-                <td class="text-right px-4">{{ f.rows }}</td>
-                <td class="text-right px-4">{{ f.last_date }}</td>
-                <td class="text-right px-4 text-gray-500">{{ f.modified }}</td>
-                <td class="text-center px-4">
+            <tr>
+                <td style="font-weight:500;">{{ f.name }}</td>
+                <td style="font-family:monospace; color:var(--text-secondary);">{{ f.path }}</td>
+                <td style="text-align:right; font-family:monospace;">{{ f.size_kb }} KB</td>
+                <td style="text-align:right; font-family:monospace;">{{ f.rows }}</td>
+                <td style="font-family:monospace;">{{ f.last_date }}</td>
+                <td style="font-family:monospace; color:var(--text-secondary);">{{ f.modified }}</td>
+                <td style="text-align:center;">
                     {% if f.status == 'fresh' %}
-                    <span class="inline-block w-2 h-2 rounded-full bg-green-400"></span>
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--green);"></span>
+                    <span style="font-size:0.75rem; color:var(--green); margin-left:4px;">Fresh</span>
                     {% elif f.status == 'ok' %}
-                    <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--orange);"></span>
+                    <span style="font-size:0.75rem; color:var(--orange); margin-left:4px;">OK</span>
                     {% elif f.status == 'stale' %}
-                    <span class="inline-block w-2 h-2 rounded-full bg-red-400"></span>
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--red);"></span>
+                    <span style="font-size:0.75rem; color:var(--red); margin-left:4px;">Stale</span>
                     {% else %}
-                    <span class="inline-block w-2 h-2 rounded-full bg-gray-600"></span>
+                    <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--text-muted);"></span>
+                    <span style="font-size:0.75rem; color:var(--text-muted); margin-left:4px;">Missing</span>
                     {% endif %}
                 </td>
             </tr>

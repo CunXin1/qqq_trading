@@ -4,26 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}QQQ Trading{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen">
-    <nav class="bg-gray-900 border-b border-gray-800">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
-            <span class="text-lg font-bold text-white">QQQ Trading</span>
-            <a href="/" class="text-gray-400 hover:text-white text-sm">Dashboard</a>
-            <a href="/signal" class="text-gray-400 hover:text-white text-sm">Signal</a>
-            <a href="/history" class="text-gray-400 hover:text-white text-sm">History</a>
-            <a href="/eval" class="text-gray-400 hover:text-white text-sm">Eval</a>
-            <a href="/data" class="text-gray-400 hover:text-white text-sm">Data</a>
-            <a href="/model" class="text-gray-400 hover:text-white text-sm">Model</a>
+<body style="margin:0; min-height:100vh;">
+    <nav class="nav-bar">
+        <div style="max-width:1200px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:24px; height:48px;">
+            <span class="nav-title">QQQ Trading</span>
+            <a href="/">Dashboard</a>
+            <a href="/eval">Eval</a>
+            <div style="margin-left:auto;">
+                <button onclick="toggleTheme()" id="themeToggle" class="theme-toggle" title="Toggle dark/light mode">
+                    <svg id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <svg id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                </button>
+            </div>
         </div>
     </nav>
-    <main class="max-w-6xl mx-auto px-4 py-6">
+    <main style="max-width:1200px; margin:0 auto; padding:24px;">
         {% block content %}{% endblock %}
     </main>
-    <footer class="text-center text-gray-600 text-xs py-4 border-t border-gray-800 mt-8">
+    <footer class="footer">
         QQQ 0DTE Volatility Prediction System
     </footer>
+    <script>
+    function toggleTheme() {
+        const isDark = document.body.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        updateIcon(isDark);
+    }
+    function updateIcon(isDark) {
+        document.getElementById('iconSun').style.display = isDark ? 'none' : 'block';
+        document.getElementById('iconMoon').style.display = isDark ? 'block' : 'none';
+    }
+    // Apply saved theme on load
+    (function() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') {
+            document.body.classList.add('dark');
+            updateIcon(true);
+        }
+    })();
+    </script>
 </body>
 </html>

@@ -1,57 +1,49 @@
 {% extends "base.html" %}
 {% block title %}Cross-Evaluation - QQQ Trading{% endblock %}
 {% block content %}
-<div class="flex items-center gap-4 mb-6">
-    <a href="/eval" class="text-sm text-gray-400 hover:text-white">&larr; Back to Eval</a>
-    <h1 class="text-2xl font-bold">Cross-Evaluation Matrix</h1>
+<div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
+    <a href="/eval" style="font-size:0.875rem; color:var(--text-secondary); text-decoration:none;">&larr; Back to Eval</a>
+    <h1 style="font-size:1.5rem; font-weight:600; color:var(--text); margin:0;">Cross-Evaluation Matrix</h1>
 </div>
 
-<div class="bg-gray-900 rounded-xl p-5 border border-gray-800 mb-6">
-    <p class="text-sm text-gray-400">
-        Each cell shows AUC when using one model (row) to predict a different task (column).
-        Diagonal cells are task-matched models (expected to perform best).
-        Off-diagonal cells test cross-task generalization.
-    </p>
+<div class="card" style="margin-bottom:16px; padding:12px 16px; font-size:0.8125rem; color:var(--text-secondary);">
+    Each cell shows AUC when using one model (row) to predict a different task (column).
+    Diagonal = task-matched models. Off-diagonal = cross-task generalization.
 </div>
 
-<div class="bg-gray-900 rounded-xl border border-gray-800 overflow-x-auto">
-    <table class="w-full text-sm">
-        <thead class="text-gray-500 border-b border-gray-800">
+<div class="card card-shadow" style="overflow-x:auto; padding:0;">
+    <table class="data-table">
+        <thead>
             <tr>
-                <th class="text-left px-4 py-3">Model \ Task</th>
+                <th style="text-align:left;">Model \ Task</th>
                 {% for t in task_keys %}
-                <th class="text-center px-4 py-3">{{ task_names[t] }}</th>
+                <th style="text-align:center;">{{ task_names[t] }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
             {% for model_task in task_keys %}
             {% if model_task in matrix %}
-            <tr class="border-b border-gray-800/30">
-                <td class="px-4 py-3">
-                    <div class="text-white font-medium">{{ model_names[model_task] }}</div>
-                    <div class="text-xs text-gray-500">{{ task_names[model_task] }}</div>
+            <tr>
+                <td>
+                    <div style="font-weight:500; color:var(--text);">{{ model_names[model_task] }}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">{{ task_names[model_task] }}</div>
                 </td>
                 {% for eval_task in task_keys %}
                 {% set auc = matrix[model_task][eval_task] %}
-                <td class="text-center px-4 py-3">
+                <td style="text-align:center; padding:16px;">
                     {% if auc is not none %}
-                    <span class="text-xl font-bold font-mono
+                    <span style="font-size:1.25rem; font-weight:700; font-family:monospace;
                         {% if model_task == eval_task %}
-                            {# Diagonal: task-matched, highlight strongly #}
-                            {% if auc >= 0.8 %}text-green-400
-                            {% elif auc >= 0.7 %}text-blue-400
-                            {% else %}text-amber-400{% endif %}
-                        {% else %}
-                            text-gray-400
-                        {% endif %}">
+                            {% if auc >= 0.8 %}color:var(--green);{% elif auc >= 0.7 %}color:var(--accent);{% else %}color:var(--orange);{% endif %}
+                        {% else %}color:var(--text-secondary);{% endif %}">
                         {{ "%.3f"|format(auc) }}
                     </span>
                     {% if model_task == eval_task %}
-                    <div class="text-xs text-green-600 mt-1">matched</div>
+                    <div style="font-size:0.6875rem; color:var(--green); margin-top:4px;">matched</div>
                     {% endif %}
                     {% else %}
-                    <span class="text-gray-600">-</span>
+                    <span style="color:var(--border);">-</span>
                     {% endif %}
                 </td>
                 {% endfor %}
@@ -62,12 +54,12 @@
     </table>
 </div>
 
-<div class="mt-6 bg-gray-900 rounded-xl p-5 border border-gray-800">
-    <h3 class="text-sm text-gray-400 mb-3">Interpretation</h3>
-    <ul class="text-sm text-gray-500 space-y-1">
-        <li>If diagonal AUC &gt; off-diagonal in the same column: task-matched model wins (expected).</li>
-        <li>If off-diagonal is close to diagonal: the tasks share signal and models generalize well.</li>
-        <li>If off-diagonal is much lower: the tasks require distinct feature patterns.</li>
+<div class="card" style="margin-top:16px; padding:16px;">
+    <h3 style="font-size:0.875rem; color:var(--text); font-weight:500; margin:0 0 8px;">Interpretation</h3>
+    <ul style="font-size:0.8125rem; color:var(--text-secondary); margin:0; padding-left:20px; line-height:1.8;">
+        <li>Diagonal AUC &gt; off-diagonal in same column: task-matched model wins (expected).</li>
+        <li>Off-diagonal close to diagonal: tasks share signal, models generalize well.</li>
+        <li>Off-diagonal much lower: tasks require distinct feature patterns.</li>
     </ul>
 </div>
 {% endblock %}

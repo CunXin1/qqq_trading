@@ -236,7 +236,7 @@ def main():
     df = load_and_build_features()
 
     print("Loading model...")
-    model, feature_cols = load_model(MODEL_DIR / "interaction_model.joblib")
+    model, feature_cols = load_model(MODEL_DIR / "interaction_2000_2019.joblib")
     print(f"  Model: {type(model).__name__}, Features: {len(feature_cols)}")
 
     signals = build_signal_table(df, model, feature_cols, args.test_start)

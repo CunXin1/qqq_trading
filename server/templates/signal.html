@@ -1,89 +1,67 @@
 {% extends "base.html" %}
 {% block title %}Signal - QQQ Trading{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Today's Signal</h1>
+<h1 style="font-size:1.5rem; font-weight:600; color:var(--text); margin:0 0 20px;">Signal Detail</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
     <!-- Prediction -->
-    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
-        <h2 class="text-gray-400 text-sm mb-2">0DTE Range > 2%</h2>
-        <div class="text-7xl font-bold mb-2
-            {% if signal == 'HIGH' %}text-red-400
-            {% elif signal == 'ELEVATED' %}text-amber-400
-            {% elif signal == 'MODERATE' %}text-blue-400
-            {% else %}text-gray-500{% endif %}">
+    <div class="card card-shadow" style="text-align:center; padding:32px;">
+        <div class="metric-label" style="margin-bottom:8px;">0DTE Range > 2% Probability</div>
+        <div style="font-size:4.5rem; font-weight:700; line-height:1; margin-bottom:12px;
+            {% if signal == 'HIGH' %}color:var(--red);
+            {% elif signal == 'ELEVATED' %}color:var(--orange);
+            {% elif signal == 'MODERATE' %}color:var(--accent);
+            {% else %}color:var(--text-muted);{% endif %}">
             {{ "%.0f"|format(prob * 100) }}%
         </div>
-        <span class="signal-badge signal-{{ signal|lower }} text-lg">{{ signal }}</span>
+        <span class="signal-badge signal-{{ signal|lower }}">{{ signal }}</span>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:12px;">Data: {{ data_date }}</div>
 
         {% if prob >= 0.7 %}
-        <div class="mt-6 bg-red-900/30 border border-red-800 rounded p-3 text-red-300 text-sm">
+        <div style="margin-top:20px; padding:12px; border:1px solid var(--green); border-radius:6px; font-weight:600; color:var(--green);">
             BUY STRADDLE AT OPEN
         </div>
         {% elif prob >= 0.5 %}
-        <div class="mt-6 bg-amber-900/30 border border-amber-800 rounded p-3 text-amber-300 text-sm">
-            Consider straddle at open
+        <div style="margin-top:20px; padding:12px; border:1px solid var(--orange); border-radius:6px; font-weight:500; color:var(--orange);">
+            Consider straddle position
         </div>
         {% endif %}
     </div>
 
     <!-- Market Context -->
-    <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
-        <h2 class="text-gray-400 text-sm mb-4">Market Context ({{ data_date }})</h2>
-        <table class="w-full text-sm">
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Previous Close</td>
-                <td class="text-right">${{ "%.2f"|format(close) }}</td>
-            </tr>
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Previous Range</td>
-                <td class="text-right">{{ "%.2f"|format(range_pct) }}%</td>
-            </tr>
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Close-to-Close</td>
-                <td class="text-right">{{ "%+.2f"|format(c2c_pct) }}%</td>
-            </tr>
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Max Drawdown</td>
-                <td class="text-right text-red-400">{{ "%.2f"|format(max_dd) }}%</td>
-            </tr>
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Max Runup</td>
-                <td class="text-right text-green-400">+{{ "%.2f"|format(max_ru) }}%</td>
-            </tr>
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Realized Vol (20d)</td>
-                <td class="text-right">{{ "%.1f"|format(rv20) }}%</td>
-            </tr>
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">VRP</td>
-                <td class="text-right {{ 'text-red-400' if vrp_label == 'Complacent' else ('text-green-400' if vrp_label == 'Fearful' else '') }}">
-                    {{ "%+.3f"|format(vrp) }} ({{ vrp_label }})
-                </td>
-            </tr>
-            {% if pre_range is defined %}
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Pre-market Range</td>
-                <td class="text-right">{{ "%.2f"|format(pre_range) }}%</td>
-            </tr>
-            <tr class="border-b border-gray-800/50">
-                <td class="py-2 text-gray-500">Pre-market Return</td>
-                <td class="text-right">{{ "%+.2f"|format(pre_ret) }}%</td>
-            </tr>
-            {% endif %}
-            <tr>
-                <td class="py-2 text-gray-500">Events</td>
-                <td class="text-right">
-                    {% if events %}
-                        {% for e in events %}
-                        <span class="bg-amber-900 text-amber-200 text-xs px-2 py-0.5 rounded">{{ e }}</span>
-                        {% endfor %}
-                    {% else %}
-                        <span class="text-gray-600">None</span>
-                    {% endif %}
-                </td>
-            </tr>
+    <div class="card card-shadow">
+        <div style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:12px; font-weight:500;">Market Context</div>
+        <table class="data-table">
+            <tbody>
+                <tr><td style="color:var(--text-muted);">Prev Close</td><td style="text-align:right; font-weight:500;">${{ "%.2f"|format(close) }}</td></tr>
+                <tr><td style="color:var(--text-muted);">Prev Range</td><td style="text-align:right; font-weight:500;">{{ "%.2f"|format(range_pct) }}%</td></tr>
+                <tr><td style="color:var(--text-muted);">C2C Return</td><td style="text-align:right; font-weight:500;">{{ "%+.2f"|format(c2c_pct) }}%</td></tr>
+                <tr><td style="color:var(--text-muted);">O2C Return</td><td style="text-align:right; font-weight:500;">{{ "%+.2f"|format(o2c_pct) }}%</td></tr>
+                <tr><td style="color:var(--text-muted);">Max Drawdown</td><td style="text-align:right; font-weight:500; color:var(--red);">{{ "%.2f"|format(max_dd) }}%</td></tr>
+                <tr><td style="color:var(--text-muted);">Max Runup</td><td style="text-align:right; font-weight:500; color:var(--green);">{{ "%.2f"|format(max_ru) }}%</td></tr>
+                <tr><td style="color:var(--text-muted);">RV20</td><td style="text-align:right; font-weight:500;">{{ "%.1f"|format(rv20) }}%</td></tr>
+                <tr>
+                    <td style="color:var(--text-muted);">VRP</td>
+                    <td style="text-align:right; font-weight:500;
+                        {% if vrp_label == 'Complacent' %}color:var(--red);
+                        {% elif vrp_label == 'Fearful' %}color:var(--green);{% endif %}">
+                        {{ "%+.3f"|format(vrp) }} ({{ vrp_label }})
+                    </td>
+                </tr>
+                {% if pre_range is defined %}
+                <tr><td style="color:var(--text-muted);">Pre-market Range</td><td style="text-align:right; font-weight:500;">{{ "%.2f"|format(pre_range) }}%</td></tr>
+                <tr><td style="color:var(--text-muted);">Pre-market Return</td><td style="text-align:right; font-weight:500;">{{ "%+.2f"|format(pre_ret) }}%</td></tr>
+                {% endif %}
+            </tbody>
         </table>
+
+        {% if events %}
+        <div style="margin-top:12px; display:flex; gap:6px;">
+            {% for e in events %}
+            <span class="event-tag">{{ e }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

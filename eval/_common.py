@@ -65,20 +65,20 @@ TASKS = {
         "col":           "intraday_range",        # (H-L)/O — straddle target / 跨式期权目标
         "shift":          0,                       # 0DTE: same-day / 当天
         "name":          "0DTE Range (H-L)/O",
-        "default_model": "range_0dte_2pct_model",
+        "default_model": "range_0dte_2pct_2000_2022",
     },
     "otc_0dte": {
         "col":           "abs_open_to_close",     # |O2C| — directional move / 方向性波动
         "shift":          0,                       # 0DTE: same-day / 当天
         "name":          "0DTE |O2C|",
-        "default_model": "otc_0dte_2pct_model",
+        "default_model": "otc_0dte_2pct_2000_2022",
     },
     "c2c_1dte": {
         "col":           "abs_close_to_close",    # |C2C| — overnight + intraday / 隔夜+日内
         "shift":         -1,                       # 1DTE: predict today → measure tomorrow
                                                    # 今天预测 → 明天衡量
         "name":          "1DTE next-day |C2C|",
-        "default_model": "c2c_1dte_2pct_model",
+        "default_model": "c2c_1dte_2pct_2000_2022",
     },
 }
 
@@ -105,14 +105,13 @@ def load_features() -> pd.DataFrame:
 
 
 def resolve_model_path(name_or_path: str) -> Path:
-    """Accept a model name ('range_0dte_2pct_model'), short alias, or explicit path.
-    接受模型名称、简短别名或完整路径。
+    """Accept a model name, stem, or explicit path.
+    接受模型名称、文件名主干或完整路径。
 
     Resolution order / 解析顺序:
       1. Absolute path → use directly / 绝对路径 → 直接使用
-      2. MODEL_DIR / name_or_path / 模型目录 / 名称
+      2. MODEL_DIR / name_or_path (if already has .joblib suffix)
       3. MODEL_DIR / name_or_path.joblib
-      4. MODEL_DIR / name_or_path_model.joblib
 
     Raises FileNotFoundError with available models if nothing matches.
     若无匹配则抛出 FileNotFoundError 并列出可用模型。
@@ -123,7 +122,6 @@ def resolve_model_path(name_or_path: str) -> Path:
     candidates = [
         MODEL_DIR / name_or_path,
         MODEL_DIR / f"{name_or_path}.joblib",
-        MODEL_DIR / f"{name_or_path}_model.joblib",
     ]
     for c in candidates:
         if c.suffix == ".joblib" and c.exists():
@@ -131,6 +129,15 @@ def resolve_model_path(name_or_path: str) -> Path:
     available = sorted(p.stem for p in MODEL_DIR.glob("*.joblib"))
     raise FileNotFoundError(
         f"Model '{name_or_path}' not found in {MODEL_DIR}. Available: {available}"
+    )
+
+
+def list_models() -> list[str]:
+    """List all available model stems (without .joblib suffix).
+    列出所有可用模型名称（不含 .joblib 后缀）。"""
+    return sorted(
+        p.stem for p in MODEL_DIR.glob("*.joblib")
+        if p.stem != "scaler"
     )
 
 
@@ -532,19 +539,21 @@ def get_report_data(task: str, model: str | None = None,
     fp_df = alerts_df[alerts_df["actual_pct"] <= thresh * 100]
     false_alarms_list = [_row_to_dict(r, d) for d, r in fp_df.iterrows()]
 
-    # Ground truth: all days with actual values, signaled or not
+    # Ground truth: actual big moves (TP+FN) + false alarms (FP), excluding TN
     ground_truth_list = []
     for d, r in sig.iterrows():
+        signaled = bool(r["prob"] >= threshold)
+        hit = bool(r["hit"])
+        if not signaled and not hit:
+            continue  # skip TN — quiet day, model silent
         row = _row_to_dict(r, d)
-        row["signaled"] = bool(r["prob"] >= threshold)
-        if row["signaled"] and row["hit"]:
+        row["signaled"] = signaled
+        if signaled and hit:
             row["result"] = "TP"
-        elif row["signaled"] and not row["hit"]:
+        elif signaled and not hit:
             row["result"] = "FP"
-        elif not row["signaled"] and row["hit"]:
-            row["result"] = "FN"
         else:
-            row["result"] = "TN"
+            row["result"] = "FN"
         ground_truth_list.append(row)
 
     return {

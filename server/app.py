@@ -62,10 +62,11 @@ def create_app() -> FastAPI:
 
     @app.get("/eval")
     async def eval_report(request: Request, task: str = "range_0dte",
-                          threshold: float = 0.5, start: str = "2023-01-01",
-                          thresh: float = 0.02, miss_thresh: float = 3.0):
+                          model: str = "", threshold: float = 0.5,
+                          start: str = "2026-01-01", thresh: float = 0.02,
+                          miss_thresh: float = 3.0):
         data = services.get_eval_report(
-            task=task, start=start, thresh=thresh,
+            task=task, model=model or None, start=start, thresh=thresh,
             threshold=threshold, miss_thresh=miss_thresh,
         )
         return templates.TemplateResponse("eval.html", {"request": request, **data})
