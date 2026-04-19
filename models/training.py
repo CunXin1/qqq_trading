@@ -147,12 +147,13 @@ def train_model(
         # Early stopping with validation set
         fit_params = {
             "eval_set": [(X_val, y_val)],
-            "verbose": False,
         }
         if model_type == "xgboost":
+            fit_params["verbose"] = False
             model.set_params(early_stopping_rounds=50, eval_metric="logloss")
         elif model_type == "lightgbm":
-            fit_params["callbacks"] = [lgb.early_stopping(50, verbose=False)]
+            fit_params["callbacks"] = [lgb.early_stopping(50, verbose=False),
+                                       lgb.log_evaluation(period=0)]
             fit_params["eval_metric"] = "binary_logloss"
         model.fit(X_train, y_train, **fit_params)
     else:
