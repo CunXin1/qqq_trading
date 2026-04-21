@@ -87,6 +87,33 @@ def engineer_base_features(daily: pd.DataFrame) -> pd.DataFrame:
     df["vol_ratio_5_60"] = df["realized_vol_5d"] / df["realized_vol_60d"]
     df["vol_ratio_10_60"] = df["realized_vol_10d"] / df["realized_vol_60d"]
 
+    # Regime switch detectors: short vol vs medium vol.
+    # 状态切换检测器：短期波动率 vs 中期波动率。
+    # RV5/RV20 > 1.5 = vol suddenly spiking while 20d average still calm → regime switch.
+    # RV5/RV20 > 1.5 = 波动率突然飙升但 20 天均值仍低 → 状态切换。
+    df["vol_ratio_5_20"] = df["realized_vol_5d"] / df["realized_vol_20d"]
+    df["vol_ratio_5_20_change"] = df["vol_ratio_5_20"] - df["vol_ratio_5_20"].shift(1)
+    df["vol_regime_switch"] = (df["vol_ratio_5_20"] > 1.5).astype(int)
+
+    # Days since vol compression: count consecutive days with range < 1%.
+    # 距波动率压缩期天数：连续 range < 1% 的天数。
+    # After prolonged compression, vol tends to snap back violently.
+    # 长期压缩后，波动率往往剧烈反弹。
+    range_below_1pct = (df["intraday_range"].shift(1) < 0.01).astype(int)
+    # Compute streak: consecutive days below 1%
+    streak = range_below_1pct.copy()
+    for i in range(1, len(streak)):
+        if streak.iloc[i] == 1:
+            streak.iloc[i] = streak.iloc[i - 1] + 1
+    df["calm_streak_days"] = streak
+
+    # Vol snap: yesterday's range > 1.5% after 5+ calm days → vol is waking up.
+    # 波动反弹：连续 5 天以上低波动后，昨天振幅 > 1.5% → 波动率正在回归。
+    df["vol_snap"] = (
+        (df["calm_streak_days"].shift(1) >= 5) &
+        (df["intraday_range"].shift(1) > 0.015)
+    ).astype(int)
+
     # Max drawdown/runup lags: capture recent intraday extremes.
     # 最大回撤/反弹滞后：捕捉近期日内极端波动。
     for lag in range(1, 4):

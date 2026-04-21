@@ -60,6 +60,11 @@ def get_base_features(include_premarket: bool = False) -> list[str]:
     # 波动率比率 (2)：短期/长期波动率状态指标
     features += ["vol_ratio_5_60", "vol_ratio_10_60"]
 
+    # Regime switch detectors (5): RV5/RV20 ratio, change, switch flag, calm streak, vol snap
+    # 状态切换检测器 (5)：RV5/RV20 比率、变化、切换标记、平静天数、波动反弹
+    features += ["vol_ratio_5_20", "vol_ratio_5_20_change", "vol_regime_switch",
+                 "calm_streak_days", "vol_snap"]
+
     # Drawdown/runup lags (6): max intraday DD/RU at lag 1-3
     # 回撤/反弹滞后 (6)：滞后 1-3 天的日内最大回撤/反弹
     for lag in range(1, 4):

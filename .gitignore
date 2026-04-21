@@ -25,6 +25,8 @@ env/
 # Data files (too large for git)
 datasets/QQQ_1min_adjusted.parquet
 datasets/QQQ_1min_unadjusted.parquet
+datasets/options_1min/
+datasets/megacap_earnings.csv
 
 # Output (generated, not source)
 output/
